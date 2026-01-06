@@ -1,1037 +1,661 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>StreamView Nexus Infinity</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --bg: #000;
-      --card: #111;
-      --accent: #ff0050;
-      --blue: #0095f6;
-      --text: #fff;
-      --glass: rgba(255, 255, 255, 0.1);
-      --border: #262626;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>StreamView Nexus Infinity</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg: #000; --card: #111; --accent: #ff0050; --blue: #0095f6; --text: #fff; 
+            --glass: rgba(255, 255, 255, 0.1); --border: #262626;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        /* IMPORTANT: allow scrolling on pc */
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; margin: 0; overflow: auto; height: 100vh; }
 
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+        /* AUTH GLASS EFFECT */
+        #authOverlay { position: fixed; inset: 0; background: radial-gradient(circle at top, #1a1a1a, #000); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 25px; }
+        .auth-card { background: var(--card); padding: 40px 30px; border-radius: 35px; width: 100%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .auth-input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 1px solid #333; background: #050505; color: white; font-size: 16px; transition: 0.3s; }
+        .auth-input:focus { border-color: var(--blue); box-shadow: 0 0 10px rgba(0,149,246,0.3); }
+        .auth-btn { width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; font-weight: 700; background: linear-gradient(45deg, var(--blue), #00d4ff); color: white; cursor: pointer; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
-      margin: 0;
-      overflow: hidden;
-      height: 100vh;
-    }
+        /* HEADER & STORIES */
+        .app-header { background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 1000; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; }
+        .logo { font-size: 24px; font-weight: 900; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .stories-bar { display: flex; gap: 15px; padding: 10px 15px; overflow-x: auto; scrollbar-width: none; }
+        .story-ring { width: 68px; height: 68px; border-radius: 50%; padding: 3px; background: linear-gradient(45deg, #f9ed32, #ee2a7b, #002aff); flex-shrink: 0; cursor: pointer; }
+        .story-pfp { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #111; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; }
 
-    /* AUTH GLASS EFFECT */
-    #authOverlay {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle at top, #1a1a1a, #000);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 25px;
-    }
+        /* STORY VIEWER MODAL */
+        #storyViewer { position: fixed; inset: 0; background: #000; z-index: 10001; display: none; flex-direction: column; }
+        .story-progress { display: flex; gap: 4px; padding: 10px; position: absolute; top: 0; width: 100%; }
+        .prog-bg { background: rgba(255,255,255,0.3); height: 2px; flex: 1; border-radius: 2px; overflow: hidden; }
+        .prog-fill { background: #fff; height: 100%; width: 0%; transition: width 0.1s linear; }
+        .story-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        .story-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .story-ui { position: absolute; top: 20px; left: 0; right: 0; padding: 15px; display: flex; align-items: center; gap: 10px; color: #fff; }
 
-    .auth-card {
-      background: var(--card);
-      padding: 40px 30px;
-      border-radius: 35px;
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-    }
+        /* PAGES */
+        .page { display: none; width: 100%; min-height: calc(100vh - 175px); overflow-y: auto; scroll-behavior: smooth; }
+        .active-page { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .auth-input {
-      width: 100%;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 15px;
-      border: 1px solid #333;
-      background: #050505;
-      color: white;
-      font-size: 16px;
-      transition: 0.3s;
-    }
+        /* FEED */
+        .video-card { margin-bottom: 20px; background: #000; border-bottom: 1px solid #111; }
+        .video-card video { width: 100%; aspect-ratio: 16/9; display: block; background: #111; }
+        .v-body { padding: 15px; display: flex; gap: 12px; }
+        .avatar-v { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; border: 1px solid #333; }
+        .v-actions { display: flex; justify-content: space-between; padding: 10px 20px 20px; }
+        .act-group { display: flex; gap: 20px; }
+        .act-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; transition: 0.2s; }
+        .act-btn:active { transform: scale(0.8); }
+        .active-l { color: var(--accent) !important; }
 
-    .auth-input:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 10px rgba(0, 149, 246, 0.3);
-    }
+        /* STATS STYLE */
+        .profile-stats { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
+        .stat-val { display: block; font-weight: 800; font-size: 18px; }
+        .stat-lbl { font-size: 12px; color: #888; }
 
-    .auth-btn {
-      width: 100%;
-      padding: 16px;
-      margin-top: 20px;
-      border-radius: 15px;
-      border: none;
-      font-weight: 700;
-      background: linear-gradient(45deg, var(--blue), #00d4ff);
-      color: white;
-      cursor: pointer;
-    }
+        /* SHORTS */
+        #shortsPage { height: calc(100vh - 65px); scroll-snap-type: y mandatory; overflow-y: auto; background: #000; }
+        .short-frame { height: calc(100vh - 65px); width: 100vw; scroll-snap-align: start; position: relative; }
+        .short-frame video { width: 100%; height: 100%; object-fit: cover; }
+        .short-side { position: absolute; right: 15px; bottom: 120px; display: flex; flex-direction: column; gap: 25px; align-items: center; z-index: 10; }
+        .side-btn { background: none; border: none; color: white; display: flex; flex-direction: column; gap: 5px; font-size: 13px; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
-    /* HEADER & STORIES */
-    .app-header {
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 0.5px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
+        /* CHAT */
+        .chat-view { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
+        .chat-header { padding: 15px; border-bottom: 0.5px solid #222; display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.9); }
+        .messages-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg-bubble { padding: 12px 16px; border-radius: 22px; max-width: 75%; font-size: 15px; line-height: 1.4; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .msg-me { background: linear-gradient(45deg, var(--blue), #00d4ff); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-them { background: #262626; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .user-item { display: flex; align-items: center; gap: 15px; padding: 15px 20px; border-bottom: 0.5px solid #111; cursor: pointer; }
+        .unread-badge { background: var(--blue); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 
-    .top-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-    }
+        /* NAV */
+        nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: rgba(0,0,0,0.98); border-top: 0.5px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 2000; }
+        .nav-link { color: #888; text-decoration: none; font-size: 22px; transition: 0.3s; }
+        .nav-link.active { color: #fff; transform: translateY(-3px); }
 
-    .my-text {
-  font-size: 40px;
-  font-weight: bold;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text; /* <-- línea añadida */
-  background-image: linear-gradient(90deg, #ff0000, #0000ff); } 
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: white;
-    }
-
-    .stories-bar {
-      display: flex;
-      gap: 15px;
-      padding: 10px 15px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .story-ring {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      padding: 3px;
-      background: linear-gradient(45deg, #f9ed32, #ee2a7b, #002aff);
-      flex-shrink: 0;
-      cursor: pointer;
-    }
-
-    .story-pfp {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #111;
-      border: 2px solid #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 22px;
-    }
-
-    /* STORY VIEWER MODAL */
-    #storyViewer {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 10001;
-      display: none;
-      flex-direction: column;
-    }
-
-    .story-progress {
-      display: flex;
-      gap: 4px;
-      padding: 10px;
-      position: absolute;
-      top: 0;
-      width: 100%;
-    }
-
-    .prog-bg {
-      background: rgba(255, 255, 255, 0.3);
-      height: 2px;
-      flex: 1;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .prog-fill {
-      background: #fff;
-      height: 100%;
-      width: 0%;
-      transition: width 0.1s linear;
-    }
-
-    .story-content {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .story-content img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    .story-ui {
-      position: absolute;
-      top: 20px;
-      left: 0;
-      right: 0;
-      padding: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #fff;
-    }
-
-    /* PAGES */
-    .page {
-      display: none;
-      width: 100%;
-      height: calc(100vh - 175px);
-      overflow-y: auto;
-      scroll-behavior: smooth;
-    }
-
-    .active-page {
-      display: block;
-      animation: fadeIn 0.4s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* FEED */
-    .video-card {
-      margin-bottom: 20px;
-      background: #000;
-      border-bottom: 1px solid #111;
-    }
-
-    .video-card video {
-      width: 100%;
-      aspect-ratio: 16/9;
-      display: block;
-      background: #111;
-    }
-
-    .v-body {
-      padding: 15px;
-      display: flex;
-      gap: 12px;
-    }
-
-    .avatar-v {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      overflow: hidden;
-      border: 1px solid #333;
-    }
-
-    .v-actions {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 20px 20px;
-    }
-
-    .act-group {
-      display: flex;
-      gap: 20px;
-    }
-
-    .act-btn {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 20px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .act-btn:active {
-      transform: scale(0.8);
-    }
-
-    .active-l {
-      color: var(--accent) !important;
-    }
-
-    /* STATS STYLE */
-    .profile-stats {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      margin: 20px 0;
-    }
-
-    .stat-val {
-      display: block;
-      font-weight: 800;
-      font-size: 18px;
-    }
-
-    .stat-lbl {
-      font-size: 12px;
-      color: #888;
-    }
-
-    /* SHORTS */
-    #shortsPage {
-      height: calc(100vh - 65px);
-      scroll-snap-type: y mandatory;
-      overflow-y: scroll;
-      background: #000;
-    }
-
-    .short-frame {
-      height: calc(100vh - 65px);
-      width: 100vw;
-      scroll-snap-align: start;
-      position: relative;
-    }
-
-    .short-frame video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .short-side {
-      position: absolute;
-      right: 15px;
-      bottom: 120px;
-      display: flex;
-      flex-direction: column;
-      gap: 25px;
-      align-items: center;
-      z-index: 10;
-    }
-
-    .side-btn {
-      background: none;
-      border: none;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 13px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 1);
-    }
-
-    /* CHAT */
-    .chat-view {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 5000;
-      display: none;
-      flex-direction: column;
-    }
-
-    .chat-header {
-      padding: 15px;
-      border-bottom: 0.5px solid #222;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      background: rgba(0, 0, 0, 0.9);
-    }
-
-    .messages-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .msg-bubble {
-      padding: 12px 16px;
-      border-radius: 22px;
-      max-width: 75%;
-      font-size: 15px;
-      line-height: 1.4;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .msg-me {
-      background: linear-gradient(45deg, var(--blue), #00d4ff);
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-    }
-
-    .msg-them {
-      background: #262626;
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-    }
-
-    .user-item {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      padding: 15px 20px;
-      border-bottom: 0.5px solid #111;
-      cursor: pointer;
-    }
-
-    .unread-badge {
-      background: var(--blue);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* NAV */
-    nav {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 65px;
-      background: rgba(0, 0, 0, 0.98);
-      border-top: 0.5px solid #222;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      z-index: 2000;
-    }
-
-    .nav-link {
-      color: #888;
-      text-decoration: none;
-      font-size: 22px;
-      transition: 0.3s;
-    }
-
-    .nav-link.active {
-      color: #fff;
-      transform: translateY(-3px);
-    }
-
-    /* MODALES */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 9000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .modal-box {
-      background: #1c1c1c;
-      width: 100%;
-      max-width: 400px;
-      padding: 25px;
-      border-radius: 30px;
-      border: 1px solid #333;
-      position: relative;
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      color: #888;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .user-select-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 15px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .user-select-item:hover {
-      background: #333;
-    }
-
-    .del-btn-mini {
-      color: #ff3b30;
-      font-size: 12px;
-      background: none;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-  </style>
+        /* MODALES */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { background: #1c1c1c; width: 100%; max-width: 400px; padding: 25px; border-radius: 30px; border: 1px solid #333; position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; color: #888; font-size: 20px; cursor: pointer; }
+        .user-select-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 15px; cursor: pointer; transition: 0.2s; }
+        .user-select-item:hover { background: #333; }
+        .del-btn-mini { color: #ff3b30; font-size: 12px; background: none; border: none; font-weight: bold; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-  <div id="authOverlay">
-    <div class="auth-card">
-      <h1 class="logo" style="font-size: 35px; margin-bottom: 0;">Nexus</h1>
-      <p id="authT" style="color:#666; font-size: 14px; margin-top: 5px;">Tu mundo, tus reglas.</p>
-
-      <div id="regOnly" style="display:none; margin-top: 20px;">
-        <input type="text" id="regName" class="auth-input" placeholder="Nombre de usuario">
-        <input type="file" id="regFile" class="auth-input" accept="image/*">
-      </div>
-
-      <input type="email" id="authEmail" class="auth-input" placeholder="Correo" style="margin-top:20px">
-      <input type="password" id="authPass" class="auth-input" placeholder="Contraseña">
-      <button class="auth-btn" onclick="handleAuth()">CONTINUAR</button>
-      <p onclick="toggleA()" style="margin-top:25px; color:var(--blue); cursor:pointer; font-weight: 600;" id="authL">¿Nuevo aquí? Crea una cuenta</p>
-    </div>
-  </div>
-
-  <div id="storyViewer">
-    <div class="story-progress" id="sProgBar"></div>
-    <div class="story-ui">
-      <div id="sUAvatar" class="avatar-v" style="width:32px; height:32px; font-size:14px"></div>
-      <b id="sUName" style="flex:1">Usuario</b>
-      <i class="fas fa-trash" id="sUDel" style="color:#ff3b30; display:none; cursor:pointer"></i>
-      <i class="fas fa-times" onclick="closeStory()" style="font-size:22px; cursor:pointer"></i>
-    </div>
-    <div class="story-content">
-      <img id="sUImg" src="">
-    </div>
-  </div>
-
-  <header class="app-header" id="hMain">
-    <div class="top-nav">
-      <div class="logo">Nexus</div>
-      <div id="myAvatar" class="avatar-v" style="width:34px; height:34px" onclick="changePage('profilePage', null)"></div>
-    </div>
-
-    <div class="stories-bar" id="storyBar">
-      <div class="story-item" onclick="openModal('storyUpModal')" style="text-align:center; font-size:11px">
-        <div class="story-ring" style="background:#222">
-          <div class="story-pfp" style="color:var(--blue)">+</div>
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h1 class="logo" style="font-size: 35px; margin-bottom: 0;">Nexus</h1>
+            <p id="authT" style="color:#666; font-size: 14px; margin-top: 5px;">Tu mundo, tus reglas.</p>
+            <div id="regOnly" style="display:none; margin-top: 20px;">
+                <input type="text" id="regName" class="auth-input" placeholder="Nombre de usuario">
+                <input type="file" id="regFile" class="auth-input" accept="image/*">
+            </div>
+            <input type="email" id="authEmail" class="auth-input" placeholder="Correo" style="margin-top:20px">
+            <input type="password" id="authPass" class="auth-input" placeholder="Contraseña">
+            <button class="auth-btn" onclick="handleAuth()">CONTINUAR</button>
+            <p onclick="toggleA()" style="margin-top:25px; color:var(--blue); cursor:pointer; font-weight: 600;" id="authL">¿Nuevo aquí? Crea una cuenta</p>
         </div>
-        <span style="color:#888">Tu historia</span>
-      </div>
     </div>
-  </header>
 
-  <div id="homePage" class="page active-page"></div>
-  <div id="shortsPage" class="page"></div>
-  <div id="inboxPage" class="page">
-    <h3 style="padding:20px 20px 0">Mensajes</h3>
-    <div id="chatList"></div>
-  </div>
-
-  <div id="profilePage" class="page">
-    <div style="text-align:center; padding:50px 20px 20px">
-      <div id="pBigAvatar" class="avatar-v"
-           style="width:100px; height:100px; margin:0 auto; font-size:40px; border:3px solid var(--border)"></div>
-      <h2 id="pNameDisp" style="margin:15px 0 5px; font-weight:800"></h2>
-
-      <div class="profile-stats">
-        <div class="stat-item">
-          <span class="stat-val" id="statFollowers">0</span>
-          <span class="stat-lbl">Seguidores</span>
+    <div id="storyViewer">
+        <div class="story-progress" id="sProgBar"></div>
+        <div class="story-ui">
+            <div id="sUAvatar" class="avatar-v" style="width:32px; height:32px; font-size:14px"></div>
+            <b id="sUName" style="flex:1">Usuario</b>
+            <i class="fas fa-trash" id="sUDel" style="color:#ff3b30; display:none; cursor:pointer"></i>
+            <i class="fas fa-times" onclick="closeStory()" style="font-size:22px; cursor:pointer"></i>
         </div>
-        <div class="stat-item">
-          <span class="stat-val" id="statFollowing">0</span>
-          <span class="stat-lbl">Siguiendo</span>
+        <div class="story-content">
+            <img id="sUImg" src="">
         </div>
-        <div class="stat-item">
-          <span class="stat-val" id="statLikes">0</span>
-          <span class="stat-lbl">Me gusta</span>
+    </div>
+
+    <header class="app-header" id="hMain">
+        <div class="top-nav">
+            <div class="logo">Nexus</div>
+            <div id="myAvatar" class="avatar-v" style="width:34px; height:34px" onclick="changePage('profilePage', null)"></div>
         </div>
-      </div>
+        <div class="stories-bar" id="storyBar">
+            <div class="story-item" onclick="openModal('storyUpModal')" style="text-align:center; font-size:11px">
+                <div class="story-ring" style="background:#222"><div class="story-pfp" style="color:var(--blue)">+</div></div>
+                <span style="color:#888">Tu historia</span>
+            </div>
+        </div>
+    </header>
 
-      <p id="pEmailDisp" style="color:#555; margin-bottom:25px; font-size:14px"></p>
-      <button onclick="logout()" style="background:#ff3b30; color:white; border:none; padding:10px 35px; border-radius:15px; font-weight:bold">
-        Cerrar Sesión
-      </button>
+    <div id="homePage" class="page active-page"></div>
+    <div id="shortsPage" class="page"></div>
+    <div id="inboxPage" class="page"><h3 style="padding:20px 20px 0">Mensajes</h3><div id="chatList"></div></div>
+    
+    <div id="profilePage" class="page">
+        <div style="text-align:center; padding:50px 20px 20px">
+            <div id="pBigAvatar" class="avatar-v" style="width:100px; height:100px; margin:0 auto; font-size:40px; border:3px solid var(--border)"></div>
+            <h2 id="pNameDisp" style="margin:15px 0 5px; font-weight:800"></h2>
+            
+            <div class="profile-stats">
+                <div class="stat-item"><span class="stat-val" id="statFollowers">0</span><span class="stat-lbl">Seguidores</span></div>
+                <div class="stat-item"><span class="stat-val" id="statFollowing">0</span><span class="stat-lbl">Siguiendo</span></div>
+                <div class="stat-item"><span class="stat-val" id="statLikes">0</span><span class="stat-lbl">Me gusta</span></div>
+            </div>
+
+            <p id="pEmailDisp" style="color:#555; margin-bottom:25px; font-size:14px"></p>
+            <button onclick="logout()" style="background:#ff3b30; color:white; border:none; padding:10px 35px; border-radius:15px; font-weight:bold">Cerrar Sesión</button>
+        </div>
     </div>
-  </div>
 
-  <div id="chatView" class="chat-view">
-    <div class="chat-header">
-      <i class="fas fa-arrow-left" onclick="closeChat()" style="font-size:20px"></i>
-      <div id="chatContactAvatar" class="avatar-v" style="width:35px; height:35px"></div>
-      <b id="chatContactName">Usuario</b>
+    <div id="chatView" class="chat-view">
+        <div class="chat-header">
+            <i class="fas fa-arrow-left" onclick="closeChat()" style="font-size:20px"></i>
+            <div id="chatContactAvatar" class="avatar-v" style="width:35px; height:35px"></div>
+            <b id="chatContactName">Usuario</b>
+        </div>
+        <div class="messages-area" id="msgArea"></div>
+        <div class="chat-input-area" style="padding:15px; display:flex; gap:10px; background:#000; align-items:center">
+            <i class="fas fa-image" onclick="sendMediaMsg('image')" style="color:#888; font-size:22px"></i>
+            <input type="text" id="msgInput" class="auth-input" style="margin:0; flex:1" placeholder="Escribe...">
+            <button class="act-btn" style="color:var(--blue); font-size:20px" onclick="sendTextMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
     </div>
 
-    <div class="messages-area" id="msgArea"></div>
+    <div id="shareModal" class="modal"><div class="modal-box">
+        <h3>Enviar a...</h3>
+        <div id="shareListUsers" style="max-height:300px; overflow-y:auto; margin-bottom:20px"></div>
+        <button class="auth-btn" style="background:#222" onclick="closeModal('shareModal')">Cancelar</button>
+    </div></div>
 
-    <div class="chat-input-area" style="padding:15px; display:flex; gap:10px; background:#000; align-items:center">
-      <i class="fas fa-image" onclick="sendMediaMsg('image')" style="color:#888; font-size:22px"></i>
-      <input type="text" id="msgInput" class="auth-input" style="margin:0; flex:1" placeholder="Escribe...">
-      <button class="act-btn" style="color:var(--blue); font-size:20px" onclick="sendTextMsg()"><i
-          class="fas fa-paper-plane"></i></button>
+    <div id="commentModal" class="modal">
+        <div class="modal-box">
+            <i class="fas fa-times close-modal" onclick="closeModal('commentModal')"></i>
+            <h3 style="margin-top: 0;">Comentarios</h3>
+            <div id="commList" style="max-height:300px; overflow-y:auto; margin-bottom:15px; font-size:14px"></div>
+            <div style="display:flex; gap:10px">
+                <input type="text" id="commInput" class="auth-input" placeholder="Escribe un comentario..." style="margin:0">
+                <button class="auth-btn" style="margin:0; width:60px" onclick="postComment()"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div id="shareModal" class="modal">
-    <div class="modal-box">
-      <h3>Enviar a...</h3>
-      <div id="shareListUsers" style="max-height:300px; overflow-y:auto; margin-bottom:20px"></div>
-      <button class="auth-btn" style="background:#222" onclick="closeModal('shareModal')">Cancelar</button>
-    </div>
-  </div>
+    <div id="uploadModal" class="modal"><div class="modal-box">
+        <h3>Nueva Publicación</h3>
+        <select id="vT" class="auth-input"><option value="video">🎞️ Video (YouTube)</option><option value="short">⚡ Short (TikTok)</option></select>
+        <input type="text" id="vTitle" class="auth-input" placeholder="Título">
+        <input type="file" id="vFile" class="auth-input" accept="video/*">
+        <button class="auth-btn" onclick="upVideo()">PUBLICAR</button>
+        <button class="auth-btn" style="background:none" onclick="closeModal('uploadModal')">Cerrar</button>
+    </div></div>
 
-  <div id="commentModal" class="modal">
-    <div class="modal-box">
-      <i class="fas fa-times close-modal" onclick="closeModal('commentModal')"></i>
-      <h3 style="margin-top: 0;">Comentarios</h3>
-      <div id="commList" style="max-height:300px; overflow-y:auto; margin-bottom:15px; font-size:14px"></div>
-      <div style="display:flex; gap:10px">
-        <input type="text" id="commInput" class="auth-input" placeholder="Escribe un comentario..." style="margin:0">
-        <button class="auth-btn" style="margin:0; width:60px" onclick="postComment()"><i class="fas fa-check"></i></button>
-      </div>
-    </div>
-  </div>
+    <div id="storyUpModal" class="modal"><div class="modal-box">
+        <h3>Tu Historia</h3>
+        <input type="file" id="sFile" class="auth-input" accept="image/*">
+        <button class="auth-btn" style="background:var(--accent)" onclick="upStory()">SUBIR AHORA</button>
+        <button class="auth-btn" style="background:none" onclick="closeModal('storyUpModal')">Cerrar</button>
+    </div></div>
 
-  <div id="uploadModal" class="modal">
-    <div class="modal-box">
-      <h3>Nueva Publicación</h3>
-      <select id="vT" class="auth-input">
-        <option value="video">🎞️ Video (YouTube)</option>
-        <option value="short">⚡ Short (TikTok)</option>
-      </select>
-      <input type="text" id="vTitle" class="auth-input" placeholder="Título">
-      <input type="file" id="vFile" class="auth-input" accept="video/*">
-      <button class="auth-btn" onclick="upVideo()">PUBLICAR</button>
-      <button class="auth-btn" style="background:none" onclick="closeModal('uploadModal')">Cerrar</button>
-    </div>
-  </div>
+    <nav>
+        <a href="#" class="nav-link active" onclick="changePage('homePage', this)"><i class="fas fa-home"></i></a>
+        <a href="#" class="nav-link" onclick="changePage('shortsPage', this)"><i class="fas fa-bolt"></i></a>
+        <a href="#" class="nav-link" onclick="openModal('uploadModal')"><i class="fas fa-plus-circle" style="font-size:30px; color:white"></i></a>
+        <a href="#" class="nav-link" onclick="changePage('inboxPage', this)"><i class="fas fa-comment"></i></a>
+        <a href="#" class="nav-link" onclick="changePage('profilePage', this)"><i class="fas fa-user"></i></a>
+    </nav>
 
-  <div id="storyUpModal" class="modal">
-    <div class="modal-box">
-      <h3>Tu Historia</h3>
-      <input type="file" id="sFile" class="auth-input" accept="image/*">
-      <button class="auth-btn" style="background:var(--accent)" onclick="upStory()">SUBIR AHORA</button>
-      <button class="auth-btn" style="background:none" onclick="closeModal('storyUpModal')">Cerrar</button>
-    </div>
-  </div>
+    <script>
+        let db;
+        let isReg = false;
+        // local saved user (from previous login)
+        let user = JSON.parse(localStorage.getItem('nexus_v9_user'));
+        let activeVidId = null, activeChatEmail = null;
+        let storyTimer = null;
 
-  <nav>
-    <a href="#" class="nav-link active" onclick="changePage('homePage', this)"><i class="fas fa-home"></i></a>
-    <a href="#" class="nav-link" onclick="changePage('shortsPage', this)"><i class="fas fa-bolt"></i></a>
-    <a href="#" class="nav-link" onclick="openModal('uploadModal')"><i class="fas fa-plus-circle"
-                                                                         style="font-size:30px; color:white"></i></a>
-    <a href="#" class="nav-link" onclick="changePage('inboxPage', this)"><i class="fas fa-comment"></i></a>
-    <a href="#" class="nav-link" onclick="changePage('profilePage', this)"><i class="fas fa-user"></i></a>
-  </nav>
+        async function hashPass(password) {
+            const msgUint8 = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-  <script>
-    let db;
-    let isReg = false;
-    let user = JSON.parse(localStorage.getItem('nexus_v9_user'));
-    let activeVidId = null, activeChatEmail = null;
-    let storyTimer = null;
-
-    async function hashPass(password) {
-      const msgUint8 = new TextEncoder().encode(password);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    const request = indexedDB.open("NexusInfinity_V9", 2);
-    request.onupgradeneeded = e => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains("users")) db.createObjectStore("users", {keyPath: "email"});
-      if (!db.objectStoreNames.contains("videos")) db.createObjectStore("videos", {keyPath: "id", autoIncrement: true});
-      if (!db.objectStoreNames.contains("stories")) db.createObjectStore("stories", {keyPath: "id", autoIncrement: true});
-      if (!db.objectStoreNames.contains("chats")) db.createObjectStore("chats", {keyPath: "id", autoIncrement: true});
-    };
-    request.onsuccess = e => {
-      db = e.target.result;
-      if (user) {
-        document.getElementById('authOverlay').style.display = 'none';
-        autoCleanup();
-        init();
-      }
-    };
-
-    function toggleA() {
-      isReg = !isReg;
-      document.getElementById('authT').innerText = isReg ? "Crea tu cuenta de Nexus" : "Tu mundo, tus reglas.";
-      document.getElementById('regOnly').style.display = isReg ? "block" : "none";
-    }
-
-    async function handleAuth() {
-      const e = document.getElementById('authEmail').value, p = document.getElementById('authPass').value;
-      if (!e || !p) return alert("Completa los campos");
-      const hashed = await hashPass(p);
-      if (isReg) {
-        const n = document.getElementById('regName').value, f = document.getElementById('regFile').files[0];
-        if (!n) return alert("Nombre requerido");
-        db.transaction("users").objectStore("users").get(e).onsuccess = async (ev) => {
-          if (ev.target.result) return alert("El correo ya existe");
-          const pfp = f ? await toB64(f) : null;
-          const u = {email: e, pass: hashed, name: n, pfp: pfp, color: randCol(), followers: [], following: []};
-          db.transaction("users", "readwrite").objectStore("users").add(u).onsuccess = () => login(u);
+        const request = indexedDB.open("NexusInfinity_V9", 2);
+        request.onupgradeneeded = e => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("users")) db.createObjectStore("users", { keyPath: "email" });
+            if (!db.objectStoreNames.contains("videos")) db.createObjectStore("videos", { keyPath: "id", autoIncrement: true });
+            if (!db.objectStoreNames.contains("stories")) db.createObjectStore("stories", { keyPath: "id", autoIncrement: true });
+            if (!db.objectStoreNames.contains("chats")) db.createObjectStore("chats", { keyPath: "id", autoIncrement: true });
         };
-      } else {
-        db.transaction("users").objectStore("users").get(e).onsuccess = res => {
-          const u = res.target.result;
-          if (u && u.pass === hashed) login(u); else alert("Datos incorrectos");
+        request.onsuccess = e => { 
+            db = e.target.result; 
+            if(user) { 
+                document.getElementById('authOverlay').style.display='none'; 
+                autoCleanup();
+                init(); 
+            }
         };
-      }
-    }
 
-    function login(u) {
-      localStorage.setItem('nexus_v9_user', JSON.stringify(u));
-      location.reload();
-    }
+        function toggleA() {
+            isReg = !isReg;
+            document.getElementById('authT').innerText = isReg ? "Crea tu cuenta de Nexus" : "Tu mundo, tus reglas.";
+            document.getElementById('regOnly').style.display = isReg ? "block" : "none";
+        }
 
-    function logout() {
-      localStorage.clear();
-      location.reload();
-    }
+        // EMAIL validation helper
+        function validEmailFormat(e) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+        }
 
-    function init() {
-      setAvatar(document.getElementById('myAvatar'), user);
-      setAvatar(document.getElementById('pBigAvatar'), user);
-      document.getElementById('pNameDisp').innerText = user.name;
-      document.getElementById('pEmailDisp').innerText = user.email;
-      updateProfileStats();
-      renderHome();
-      renderStories();
-      renderInbox();
-    }
+        async function handleAuth() {
+            const e = document.getElementById('authEmail').value.trim().toLowerCase();
+            const p = document.getElementById('authPass').value;
+            if(!e || !p) return alert("Completa los campos");
+            if(!validEmailFormat(e)) return alert("Introduce un correo válido.");
+            const hashed = await hashPass(p);
 
-    function updateProfileStats() {
-      db.transaction("users").objectStore("users").get(user.email).onsuccess = e => {
-        const u = e.target.result;
-        if (!u) return;
-        document.getElementById('statFollowers').innerText = u.followers ? u.followers.length : 0;
-        document.getElementById('statFollowing').innerText = u.following ? u.following.length : 0;
-      };
-      db.transaction("videos").objectStore("videos").getAll().onsuccess = e => {
-        const myVids = e.target.result.filter(v => v.email === user.email);
-        const totalLikes = myVids.reduce((acc, v) => acc + (v.likedBy ? v.likedBy.length : 0), 0);
-        document.getElementById('statLikes').innerText = totalLikes;
-      };
-    }
+            if(isReg) {
+                // require gmail for registering (you can change this)
+                if(!e.endsWith('@gmail.com')) return alert("Regístrate con una cuenta Gmail (ej: usuario@gmail.com).");
+                if(p.length < 8) return alert("La contraseña debe tener al menos 8 caracteres.");
+                const n = document.getElementById('regName').value.trim(), f = document.getElementById('regFile').files[0];
+                if(!n) return alert("Nombre requerido");
+                db.transaction("users").objectStore("users").get(e).onsuccess = async (ev) => {
+                    if(ev.target.result) return alert("El correo ya existe");
+                    const pfp = f ? await toB64(f) : null;
+                    const u = { email:e, pass:hashed, name:n, pfp:pfp, color:randCol(), followers: [], following: [] };
+                    db.transaction("users","readwrite").objectStore("users").add(u).onsuccess = () => {
+                        login(u);
+                    };
+                };
+            } else {
+                db.transaction("users").objectStore("users").get(e).onsuccess = res => {
+                    const u = res.target.result;
+                    if(u && u.pass === hashed) login(u); else alert("Datos incorrectos");
+                };
+            }
+        }
 
-    function setAvatar(el, u) {
-      if (u && u.pfp) el.innerHTML = `<img src="${u.pfp}" style="width:100%; height:100%; object-fit:cover">`;
-      else {
-        el.innerText = u && u.name ? u.name[0].toUpperCase() : '?';
-        el.style.background = (u && u.color) || '#333';
-      }
-    }
+        function login(u) { localStorage.setItem('nexus_v9_user', JSON.stringify(u)); user = u; location.reload(); }
+        function logout() { localStorage.removeItem('nexus_v9_user'); localStorage.clear(); location.reload(); }
 
-    // --- LIKES REALES ---
-    function toggleLike(id, btn) {
-      const tx = db.transaction("videos", "readwrite"), st = tx.objectStore("videos");
-      st.get(id).onsuccess = e => {
-        const v = e.target.result;
-        if (!v.likedBy) v.likedBy = [];
-        const idx = v.likedBy.indexOf(user.email);
-        if (idx > -1) v.likedBy.splice(idx, 1);
-        else v.likedBy.push(user.email);
-        st.put(v);
-        tx.oncomplete = () => {
-          btn.classList.toggle('active-l');
-          if (btn.querySelector('span')) btn.querySelector('span').innerText = v.likedBy.length;
-          updateProfileStats();
-        };
-      };
-    }
-
-    // --- SEGUIDORES REALES ---
-    function toggleSub(targetEmail) {
-      const tx = db.transaction("users", "readwrite"), st = tx.objectStore("users");
-      st.get(user.email).onsuccess = e1 => {
-        const me = e1.target.result;
-        st.get(targetEmail).onsuccess = e2 => {
-          const target = e2.target.result;
-          if (!me.following) me.following = [];
-          if (!target.followers) target.followers = [];
-
-          const idx = me.following.indexOf(targetEmail);
-          if (idx > -1) {
-            me.following.splice(idx, 1);
-            target.followers.splice(target.followers.indexOf(user.email), 1);
-          } else {
-            me.following.push(targetEmail);
-            target.followers.push(user.email);
-          }
-          st.put(me);
-          st.put(target);
-          tx.oncomplete = () => {
-            user = me;
-            localStorage.setItem('nexus_v9_user', JSON.stringify(me));
-            renderHome();
+        function init() {
+            setAvatar(document.getElementById('myAvatar'), user);
+            setAvatar(document.getElementById('pBigAvatar'), user);
+            document.getElementById('pNameDisp').innerText = user.name;
+            document.getElementById('pEmailDisp').innerText = user.email;
             updateProfileStats();
-          };
-        };
-      };
-    }
-
-    // --- CHAT REALISTA ---
-    function openChat(email, name, pfp, color) {
-      activeChatEmail = email;
-      document.getElementById('chatView').style.display = 'flex';
-      document.getElementById('chatContactName').innerText = name;
-      setAvatar(document.getElementById('chatContactAvatar'), {pfp, name, color});
-      loadMessages();
-    }
-
-    function closeChat() {
-      document.getElementById('chatView').style.display = 'none';
-      activeChatEmail = null;
-      renderInbox();
-    }
-
-    function sendTextMsg() {
-      const input = document.getElementById('msgInput');
-      const val = input.value.trim();
-      if (!val) return;
-      const msg = {from: user.email, to: activeChatEmail, type: 'text', content: val, timestamp: Date.now(), seen: false};
-      db.transaction("chats", "readwrite").objectStore("chats").add(msg).onsuccess = () => {
-        input.value = "";
-        loadMessages();
-      };
-    }
-
-    function sendMediaMsg(type) {
-      const picker = document.createElement('input');
-      picker.type = 'file';
-      picker.accept = type === 'image' ? 'image/*' : 'video/*';
-      picker.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const b = await toB64(file);
-          const msg = {from: user.email, to: activeChatEmail, type, content: b, timestamp: Date.now(), seen: false};
-          db.transaction("chats", "readwrite").objectStore("chats").add(msg).onsuccess = () => loadMessages();
+            renderHome();
+            renderStories();
+            renderInbox();
         }
-      };
-      picker.click();
-    }
 
-    function loadMessages() {
-      db.transaction("chats").objectStore("chats").getAll().onsuccess =
-        e => {
-          const conversation = e.target.result.filter(m =>
-            (m.from === user.email && m.to === activeChatEmail) || (m.from === activeChatEmail && m.to === user.email)
-          ).sort((a, b) => a.timestamp - b.timestamp);
-
-          const area = document.getElementById('msgArea');
-          area.innerHTML = conversation.map(m => {
-            const isMe = m.from === user.email;
-            if (!isMe && !m.seen) markAsSeen(m.id);
-            let body = m.type === 'text' ? `<span>${m.content}</span>` :
-              (m.type === 'image' ? `<img src="${m.content}" style="max-width:200px; border-radius:10px">` :
-                `<video src="${m.content}" controls style="max-width:200px; border-radius:10px"></video>`);
-
-            return `<div class="msg-bubble ${isMe ? 'msg-me' : 'msg-them'}">
-                      ${body}
-                      <div style="font-size:9px; opacity:0.6; text-align:right; margin-top:4px">
-                        ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                        ${isMe ? (m.seen ? '<i class="fas fa-check-double" style="color:#fff"></i>' : '<i class="fas fa-check"></i>') : ''}
-                      </div>
-                    </div>`;
-          }).join('');
-          area.scrollTop = area.scrollHeight;
-        };
-    }
-
-    function markAsSeen(id) {
-      const tx = db.transaction("chats", "readwrite");
-      const st = tx.objectStore("chats");
-      st.get(id).onsuccess = e => {
-        const m = e.target.result;
-        if (m) {
-          m.seen = true;
-          st.put(m);
+        function updateProfileStats() {
+            db.transaction("users").objectStore("users").get(user.email).onsuccess = e => {
+                const u = e.target.result;
+                if(!u) return;
+                document.getElementById('statFollowers').innerText = u.followers ? u.followers.length : 0;
+                document.getElementById('statFollowing').innerText = u.following ? u.following.length : 0;
+            };
+            db.transaction("videos").objectStore("videos").getAll().onsuccess = e => {
+                const myVids = e.target.result.filter(v => v.email === user.email);
+                const totalLikes = myVids.reduce((acc, v) => acc + (v.likedBy ? v.likedBy.length : 0), 0);
+                document.getElementById('statLikes').innerText = totalLikes;
+            };
         }
-      };
-    }
 
-    function renderInbox() {
-      db.transaction("users").objectStore("users").getAll().onsuccess = e => {
-        const users = e.target.result.filter(u => u.email !== user.email);
-        db.transaction("chats").objectStore("chats").getAll().onsuccess = ec => {
-          const allMsgs = ec.target.result;
-          document.getElementById('chatList').innerHTML = users.map(u => {
-            const uMsgs = allMsgs.filter(m => m.from === u.email || m.to === u.email);
-            const last = uMsgs.sort((a, b) => b.timestamp - a.timestamp)[0];
-            const unread = uMsgs.filter(m => m.from === u.email && m.to === user.email && !m.seen).length;
-            return `<div class="user-item" onclick="openChat('${u.email}','${u.name}','${u.pfp}','${u.color}')">
-                      <div class="avatar-v" style="background:${u.color}; width:50px; height:50px">${u.pfp ? `<img src="${u.pfp}" style="width:100%;height:100%;object-fit:cover">` : u.name[0]}</div>
-                      <div style="flex:1"><b>${u.name}</b><br><small style="color:#666">${last ? (last.type === 'text' ? last.content : 'Multimedia') : 'Sin mensajes'}</small></div>
-                      ${unread ? `<div class="unread-badge">${unread}</div>` : ''}
+        function setAvatar(el, u) {
+            if(!u) return;
+            if(u.pfp) el.innerHTML = `<img src="${u.pfp}" style="width:100%; height:100%; object-fit:cover">`;
+            else { el.innerText = u.name ? u.name[0].toUpperCase() : '?'; el.style.background = u.color || '#333'; }
+        }
+
+        // --- LIKES REALES ---
+        function toggleLike(id, btn) {
+            const tx = db.transaction("videos", "readwrite"), st = tx.objectStore("videos");
+            st.get(id).onsuccess = e => {
+                const v = e.target.result;
+                if(!v.likedBy) v.likedBy = [];
+                const idx = v.likedBy.indexOf(user.email);
+                if(idx > -1) v.likedBy.splice(idx, 1);
+                else v.likedBy.push(user.email);
+                st.put(v);
+                tx.oncomplete = () => {
+                    btn.classList.toggle('active-l');
+                    if(btn.querySelector('span')) btn.querySelector('span').innerText = v.likedBy.length;
+                    updateProfileStats();
+                };
+            };
+        }
+
+        // --- SEGUIDORES REALES ---
+        function toggleSub(targetEmail) {
+            const tx = db.transaction("users", "readwrite"), st = tx.objectStore("users");
+            st.get(user.email).onsuccess = e1 => {
+                const me = e1.target.result;
+                st.get(targetEmail).onsuccess = e2 => {
+                    const target = e2.target.result;
+                    if(!me.following) me.following = [];
+                    if(!target.followers) target.followers = [];
+
+                    const idx = me.following.indexOf(targetEmail);
+                    if(idx > -1) {
+                        me.following.splice(idx, 1);
+                        const fi = target.followers.indexOf(user.email);
+                        if(fi > -1) target.followers.splice(fi, 1);
+                    } else {
+                        me.following.push(targetEmail);
+                        target.followers.push(user.email);
+                    }
+                    st.put(me);
+                    st.put(target);
+                    tx.oncomplete = () => {
+                        user = me;
+                        localStorage.setItem('nexus_v9_user', JSON.stringify(me));
+                        renderHome();
+                        updateProfileStats();
+                    };
+                };
+            };
+        }
+
+        // --- CHAT REALISTA ---
+        function openChat(email, name, pfp, color) {
+            activeChatEmail = email;
+            document.getElementById('chatView').style.display = 'flex';
+            document.getElementById('chatContactName').innerText = name;
+            setAvatar(document.getElementById('chatContactAvatar'), { pfp, name, color });
+            loadMessages();
+        }
+
+        function closeChat() { document.getElementById('chatView').style.display='none'; activeChatEmail=null; renderInbox(); }
+
+        function sendTextMsg() {
+            const input = document.getElementById('msgInput');
+            const val = input.value.trim();
+            if(!val) return;
+            const msg = { from: user.email, to: activeChatEmail, type: 'text', content: val, timestamp: Date.now(), seen: false };
+            db.transaction("chats","readwrite").objectStore("chats").add(msg).onsuccess = () => {
+                input.value = "";
+                loadMessages();
+            };
+        }
+
+        function sendMediaMsg(type) {
+            const picker = document.createElement('input');
+            picker.type = 'file';
+            picker.accept = type === 'image' ? 'image/*' : 'video/*';
+            picker.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const b = await toB64(file); // small images -> base64 ok
+                    const msg = { from: user.email, to: activeChatEmail, type, content: b, timestamp: Date.now(), seen: false };
+                    db.transaction("chats","readwrite").objectStore("chats").add(msg).onsuccess = () => loadMessages();
+                }
+            };
+            picker.click();
+        }
+
+        function loadMessages() {
+            db.transaction("chats").objectStore("chats").getAll().onsuccess = e => {
+                const conversation = e.target.result.filter(m => 
+                    (m.from === user.email && m.to === activeChatEmail) || (m.from === activeChatEmail && m.to === user.email)
+                ).sort((a,b) => a.timestamp - b.timestamp);
+
+                const area = document.getElementById('msgArea');
+                area.innerHTML = conversation.map(m => {
+                    const isMe = m.from === user.email;
+                    if(!isMe && !m.seen) markAsSeen(m.id);
+                    let body = m.type === 'text' ? `<span>${escapeHtml(m.content)}</span>` : 
+                               (m.type === 'image' ? `<img src="${m.content}" style="max-width:200px; border-radius:10px">` : 
+                               `<video src="${m.content}" controls style="max-width:200px; border-radius:10px"></video>`);
+
+                    return `<div class="msg-bubble ${isMe ? 'msg-me' : 'msg-them'}">
+                                ${body}
+                                <div style="font-size:9px; opacity:0.6; text-align:right; margin-top:4px">
+                                    ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} 
+                                    ${isMe ? (m.seen ? '<i class="fas fa-check-double" style="color:#fff"></i>' : '<i class="fas fa-check"></i>') : ''}
+                                </div>
+                            </div>`;
+                }).join('');
+                area.scrollTop = area.scrollHeight;
+            };
+        }
+
+        function markAsSeen(id) {
+            const tx = db.transaction("chats","readwrite");
+            const st = tx.objectStore("chats");
+            st.get(id).onsuccess = e => { 
+                const m = e.target.result; 
+                if(m) { m.seen=true; st.put(m); } 
+            };
+        }
+
+        function renderInbox() {
+            db.transaction("users").objectStore("users").getAll().onsuccess = e => {
+                const users = e.target.result.filter(u => u.email !== user.email);
+                db.transaction("chats").objectStore("chats").getAll().onsuccess = ec => {
+                    const allMsgs = ec.target.result;
+                    document.getElementById('chatList').innerHTML = users.map(u => {
+                        const uMsgs = allMsgs.filter(m => m.from === u.email || m.to === u.email);
+                        const last = uMsgs.sort((a,b) => b.timestamp - a.timestamp)[0];
+                        const unread = uMsgs.filter(m => m.from === u.email && m.to === user.email && !m.seen).length;
+                        return `<div class="user-item" onclick="openChat('${u.email}','${u.name}','${u.pfp}','${u.color}')">
+                            <div class="avatar-v" style="background:${u.color}; width:50px; height:50px">${u.pfp?`<img src="${u.pfp}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+                            <div style="flex:1"><b>${u.name}</b><br><small style="color:#666">${last ? (last.type==='text'?escapeHtml(last.content):'Multimedia') : 'Sin mensajes'}</small></div>
+                            ${unread ? `<div class="unread-badge">${unread}</div>`:''}
+                        </div>`;
+                    }).join('');
+                };
+            };
+        }
+
+        // --- VIDEOS, STORIES & UTILS ---
+        function renderHome() {
+            db.transaction("videos").objectStore("videos").getAll().onsuccess = e => {
+                const list = e.target.result.filter(v => v.type === 'video').reverse();
+                const container = document.getElementById('homePage');
+                container.innerHTML = '';
+                list.forEach(v => {
+                    let src = '';
+                    if(v.blob) src = v.blob;               // old base64 url
+                    else if(v.file) src = URL.createObjectURL(v.file); // File stored in IDB
+                    else if(v.fileBlob) src = URL.createObjectURL(v.fileBlob);
+                    // Build card
+                    container.innerHTML += `
+                    <div class="video-card">
+                        <video src="${src}" controls preload="metadata"></video>
+                        <div class="v-body">
+                            <div class="avatar-v" style="background:${v.color}">${v.pfp?`<img src="${v.pfp}" style="width:100%;height:100%;object-fit:cover">`:v.author[0]}</div>
+                            <div style="flex:1"><b>${escapeHtml(v.title)}</b><br><small style="color:#666">${escapeHtml(v.author)}</small></div>
+                            ${v.email === user.email ? `<button class="del-btn-mini" onclick="deleteContent('videos', ${v.id})">Borrar</button>` : `<button onclick="toggleSub('${v.email}')" style="background:${(user.following||[]).includes(v.email)?'#222':'var(--blue)'}; color:white; border:none; padding:6px 15px; border-radius:10px; font-weight:600; font-size:12px">${(user.following||[]).includes(v.email)?'Siguiendo':'Seguir'}</button>`}
+                        </div>
+                        <div class="v-actions">
+                            <div class="act-group">
+                                <button class="act-btn ${(v.likedBy||[]).includes(user.email)?'active-l':''}" onclick="toggleLike(${v.id}, this)"><i class="fas fa-heart"></i></button>
+                                <button class="act-btn" onclick="openComms(${v.id})"><i class="fas fa-comment"></i></button>
+                                <button class="act-btn" onclick="openSharePicker(${v.id})"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
                     </div>`;
-          }).join('');
-        };
-      };
-    }
+                });
+            };
+        }
 
-    // --- VIDEOS, STORIES & UTILS ---
-    function renderHome() {
-      db.transaction("videos").objectStore("videos").getAll().onsuccess = e => {
-        const list = e.target.result.filter(v => v.type === 'video').reverse();
-        document.getElementById('homePage').innerHTML = list.map(v => `
-          <div class="video-card">
-            <video src="${v.blob}" controls preload="metadata"></video>
-            <div class="v-body">
-              <div class="avatar-v" style="background:${v.color}">${v.pfp ? `<img src="${v.pfp}" style="width:100%;height:100%;object-fit:cover">` : v.author[0]}</div>
-              <div style="flex:1"><b>${v.title}</b><br><small style="color:#666">${v.author}</small></div>
-              ${v.email === user.email ? `<button class="del-btn-mini" onclick="deleteContent('videos', ${v.id})">Borrar</button>` : `<button onclick="toggleSub('${v.email}')" style="background:${(user.following || []).includes(v.email) ? '#222' : 'var(--blue)'}; color:white; border:none; padding:6px 15px; border-radius:10px; font-weight:600; font-size:12px">${(user.following || []).includes(v.email) ? 'Siguiendo' : 'Seguir'}</button>`}
-            </div>
-            <div class="v-actions">
-              <div class="act-group">
-                <button class="act-btn ${(v.likedBy || []).includes(user.email) ? 'active-l' : ''}" onclick="toggleLike(${v.id}, this)"><i class="fas fa-heart"></i></button>
-                <button class="act-btn" onclick="openComms(${v.id})"><i class="fas fa-comment"></i></button>
-                <button class="act-btn" onclick="openSharePicker(${v.id})"><i class="fas fa-paper-plane"></i></button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      };
-    }
+        async function upVideo() {
+            const f = document.getElementById('vFile').files[0], t = document.getElementById('vTitle').value.trim(), tp = document.getElementById('vT').value;
+            if(!f) return alert("Selecciona un archivo");
+            // If file is very big we still store as File in IndexedDB (structured clone) — better than base64
+            // But recommend using cloud upload for >200MB in production.
+            try {
+                const vid = { title:t, blob:null, file: f, type:tp, author:user.name, email:user.email, pfp:user.pfp, color:user.color, likedBy: [], comms:[], timestamp: Date.now() };
+                db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => location.reload();
+            } catch(err) {
+                // fallback: convert small files to base64
+                const b = await toB64(f);
+                const vid = { title:t, blob:b, type:tp, author:user.name, email:user.email, pfp:user.pfp, color:user.color, likedBy: [], comms:[], timestamp: Date.now() };
+                db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => location.reload();
+            }
+        }
 
-    async function upVideo() {
-      const f = document.getElementById('vFile').files[0], t = document.getElementById('vTitle').value, tp = document.getElementById('vT').value;
-      if (!f) return;
-      const b = await toB64(f);
-      const vid = {
-        title: t, blob: b, type: tp, author: user.name, email: user.email, pfp: user.pfp, color: user.color,
-        likedBy: [], comms: [], timestamp: Date.now()
-      };
-      db.transaction("videos", "readwrite").objectStore("videos").add(vid).onsuccess = () => location.reload();
-    }
+        function openSharePicker(vidId) {
+            activeVidId = vidId;
+            db.transaction("users").objectStore("users").getAll().onsuccess = e => {
+                const allUsers = e.target.result.filter(u => u.email !== user.email);
+                document.getElementById('shareListUsers').innerHTML = allUsers.map(u => `
+                    <div class="user-select-item" onclick="confirmShare('${u.email}', '${escapeHtml(u.name)}')">
+                        <div class="avatar-v" style="background:${u.color}; width:40px; height:40px">${u.pfp?`<img src="${u.pfp}" style="width:100%;height:100%;object-fit:cover">`:u.name[0]}</div>
+                        <b>${escapeHtml(u.name)}</b>
+                    </div>`).join('');
+                openModal('shareModal');
+            };
+        }
 
-    function renderStories() {
-      const now = Date.now();
-      db.transaction("stories").objectStore("stories").getAll().onsuccess = e => {
-        const sItems = e.target.result.filter(s => (now - s.created) < 24 * 60 * 60 * 1000);
-        const container = document.getElementById('storyBar');
-        container.innerHTML = `
-          <div class="story-item" onclick="openModal('storyUpModal')" style="text-align:center; font-size:11px">
-            <div class="story-ring" style="background:#222"><div class="story-pfp" style="color:var(--blue)">+</div></div>
-            <span style="color:#888">Tu historia</span>
-          </div>
-        `;
-        sItems.forEach(s => {
-          const d = document.createElement('div');
-          d.className = 'story-item';
-          d.innerHTML = `<div class="story-ring"><div class="story-pfp" style="background:${s.color}">${s.pfp ? `<img src="${s.pfp}" style="width:100%;height:100%;object-fit:cover">` : s.author[0]}</div></div><span style="font-size:10px; color:#aaa; margin-top:5px; display:block; text-align:center">${s.author}</span>`;
-          d.onclick = () => viewStory(s);
-          container.appendChild(d);
-        });
-      };
-    }
+        function confirmShare(email, name) {
+            db.transaction("videos").objectStore("videos").get(activeVidId).onsuccess = e => {
+                const v = e.target.result;
+                // prefer to share stored blob/file as base64 for chat (small) — for big files you'd implement cloud share link
+                let content = v.blob || null;
+                if(!content && v.file) {
+                    // small optimization: don't convert large files to base64; createObjectURL and send not persistent
+                    content = URL.createObjectURL(v.file);
+                }
+                const msg = { from: user.email, to: email, type: 'video', content: content || '', timestamp: Date.now(), seen:false };
+                db.transaction("chats","readwrite").objectStore("chats").add(msg).onsuccess = () => {
+                    alert("Enviado a " + name);
+                    closeModal('shareModal');
+                };
+            };
+        }
 
-    function upStory() {
-      const f = document.getElementById('sFile').files[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.readAsDataURL(f);
-      r.onload = () => {
-        const s = {img: r.result, author: user.name, email: user.email, color: user.color, pfp: user.pfp, created: Date.now()};
-        db.transaction("stories", "readwrite").objectStore("stories").add(s).onsuccess = () => location.reload();
-      };
-    }
+        function openComms(id) {
+            activeVidId = id;
+            db.transaction("videos").objectStore("videos").get(id).onsuccess = e => {
+                const v = e.target.result;
+                document.getElementById('commList').innerHTML = (v.comms||[]).map(c => `
+                    <div style="margin-bottom:15px; display:flex; gap:10px; align-items:start">
+                        <div class="avatar-v" style="width:25px; height:25px; font-size:10px; background:#444">${escapeHtml((c.u||'')[0]||'?')}</div>
+                        <div><b style="font-size:12px">${escapeHtml(c.u)}</b><br>${escapeHtml(c.t)}</div>
+                    </div>`).join('') || "<p style='color:#555; text-align:center'>No hay comentarios aún.</p>";
+                openModal('commentModal');
+            };
+        }
 
-    function viewStory(s) {
-      const viewer = document.getElementById('storyViewer');
-      document.getElementById('sUImg').src = s.img;
-      document.getElementById('sUName').innerText = s.author;
-      setAvatar(document.getElementById('sUAvatar'), s);
-      viewer.style.display = 'flex';
-      document.getElementById('sProgBar').innerHTML = '<div class="prog-bg"><div class="prog-fill" id="curFill"></div></div>';
-      setTimeout(() => {
-        document.getElementById('curFill').style.width = '100%';
-      }, 50);
-      clearTimeout(storyTimer);
-      storyTimer = setTimeout(closeStory, 5000);
-    }
+        function postComment() {
+            const t = document.getElementById('commInput').value; if(!t) return;
+            const tx = db.transaction("videos", "readwrite"), st = tx.objectStore("videos");
+            st.get(activeVidId).onsuccess = e => {
+                const v = e.target.result; if(!v.comms) v.comms = [];
+                v.comms.push({u:user.name, t:t, email: user.email});
+                st.put(v); tx.oncomplete = () => { document.getElementById('commInput').value=""; openComms(activeVidId); };
+            };
+        }
 
-    function closeStory() {
-      document.getElementById('storyViewer').style.display = 'none';
-      clearTimeout(storyTimer);
-    }
+        function renderStories() {
+            const now = Date.now();
+            db.transaction("stories").objectStore("stories").getAll().onsuccess = e => {
+                const sItems = e.target.result.filter(s => (now - s.created) < 24 * 60 * 60 * 1000);
+                const container = document.getElementById('storyBar');
+                container.innerHTML = `<div class="story-item" onclick="openModal('storyUpModal')" style="text-align:center; font-size:11px"><div class="story-ring" style="background:#222"><div class="story-pfp" style="color:var(--blue)">+</div></div><span style="color:#888">Tu historia</span></div>`;
+                sItems.forEach(s => {
+                    const d = document.createElement('div'); d.className='story-item';
+                    d.innerHTML = `<div class="story-ring"><div class="story-pfp" style="background:${s.color}">${s.pfp?`<img src="${s.pfp}" style="width:100%;height:100%;object-fit:cover">`:s.author[0]}</div></div><span style="font-size:10px; color:#aaa; margin-top:5px; display:block; text-align:center">${escapeHtml(s.author)}</span>`;
+                    d.onclick = () => viewStory(s);
+                    container.appendChild(d);
+                });
+            };
+        }
 
-    function changePage(id, el) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-      document.getElementById(id).classList.add('active-page');
-      document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-      if (el) el.classList.add('active');
-      if (id === 'inboxPage') renderInbox();
-    }
+        function upStory() {
+            const f = document.getElementById('sFile').files[0]; if(!f) return;
+            const r = new FileReader(); r.readAsDataURL(f);
+            r.onload = () => {
+                const s = { img:r.result, author:user.name, email:user.email, color:user.color, pfp:user.pfp, created: Date.now() };
+                db.transaction("stories","readwrite").objectStore("stories").add(s).onsuccess = () => location.reload();
+            };
+        }
 
-    function toB64(f) {
-      return new Promise(r => {
-        const rd = new FileReader();
-        rd.onload = () => r(rd.result);
-        rd.readAsDataURL(f);
-      });
-    }
+        function viewStory(s) {
+            const viewer = document.getElementById('storyViewer');
+            document.getElementById('sUImg').src = s.img;
+            document.getElementById('sUName').innerText = s.author;
+            setAvatar(document.getElementById('sUAvatar'), s);
+            viewer.style.display = 'flex';
+            document.getElementById('sProgBar').innerHTML = '<div class="prog-bg"><div class="prog-fill" id="curFill"></div></div>';
+            setTimeout(() => { document.getElementById('curFill').style.width = '100%'; }, 50);
+            clearTimeout(storyTimer);
+            storyTimer = setTimeout(closeStory, 5000);
+        }
 
-    function randCol() {
-      return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    }
+        function closeStory() { document.getElementById('storyViewer').style.display='none'; clearTimeout(storyTimer); }
 
-    function openModal(id) {
-      document.getElementById(id).style.display = 'flex';
-    }
+        function changePage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(id).classList.add('active-page');
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+            if(el) el.classList.add('active');
+            if(id === 'inboxPage') renderInbox();
+            if(id === 'shortsPage') renderShorts();
+            if(id === 'homePage') renderHome();
+        }
 
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
+        function renderShorts() {
+            db.transaction("videos").objectStore("videos").getAll().onsuccess = e => {
+                const list = e.target.result
+                    .filter(v => v.type === 'short')
+                    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || b.timestamp - a.timestamp);
+                const container = document.getElementById('shortsPage');
+                container.innerHTML = '';
+                list.forEach(s => {
+                    let src = s.blob || (s.file ? URL.createObjectURL(s.file) : '');
+                    container.innerHTML += `
+                        <div class="short-frame">
+                            <video src="${src}" loop playsinline onclick="this.paused?this.play():this.pause()"></video>
+                            <div class="short-side">
+                                <div class="avatar-v" style="background:${s.color}; border:2px solid white">${s.pfp?`<img src="${s.pfp}" style="width:100%;height:100%;object-fit:cover">`:s.author[0]}</div>
+                                <button class="side-btn ${(s.likedBy||[]).includes(user.email)?'active-l':''}" onclick="toggleLike(${s.id}, this)"><i class="fas fa-heart fa-2x"></i><span>${s.likedBy? s.likedBy.length : (s.likes||0)}</span></button>
+                                <button class="side-btn" onclick="openComms(${s.id})"><i class="fas fa-comment fa-2x"></i><span>${s.comms? s.comms.length:0}</span></button>
+                                <button class="side-btn" onclick="openSharePicker(${s.id})"><i class="fas fa-share fa-2x"></i></button>
+                                ${s.email === user.email ? `<button class="side-btn" onclick="deleteContent('videos', ${s.id})" style="color:#ff3b30"><i class="fas fa-trash fa-lg"></i></button>` : ''}
+                            </div>
+                            <div style="position:absolute; bottom:30px; left:20px; text-shadow:0 2px 10px #000; pointer-events:none">
+                                <b>@${escapeHtml(s.author)}</b><p style="margin:5px 0">${escapeHtml(s.title)}</p>
+                            </div>
+                        </div>`;
+                });
+            };
+        }
 
-    function autoCleanup() {
-      /* Lógica de 24h incluida en renderStories */
-    }
+        function deleteContent(store, id) { if(confirm("¿Borrar?")) db.transaction(store, "readwrite").objectStore(store).delete(id).onsuccess = () => location.reload(); }
 
-    function deleteContent(store, id) {
-      if (confirm("¿Borrar?")) db.transaction(store, "readwrite").objectStore(store).delete(id).onsuccess = () => location.reload();
-    }
-  </script>
+        function toB64(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); }); }
+        function randCol() { return '#' + Math.floor(Math.random()*16777215).toString(16); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function autoCleanup() { /* La lógica de historias 24h ya está aplicada en renderStories */ }
 
-  <!-- ADDED SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.1/dist/supabase.min.js"></script>
-  <script src="nexus_bridge.js"></script>
+        // small helper to escape HTML in strings
+        function escapeHtml(str) {
+            if(!str && str !== 0) return '';
+            return String(str).replace(/[&<>"'`=\/]/g, function (s) {
+                return ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                    '/': '&#x2F;',
+                    '`': '&#x60;',
+                    '=': '&#x3D;'
+                })[s];
+            });
+        }
+    </script>
 </body>
 </html>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.1/dist/supabase.min.js"></script>
-<script src="nexus_bridge.js"></script>
-    </style>
