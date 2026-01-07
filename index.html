@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>StreamView Nexus Infinity</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        :root { 
-            --bg: #000; --card: #111; --accent: #ff0050; --blue: #0095f6; --text: #fff; 
+        :root {
+            --bg: #000; --card: #111; --accent: #ff0050; --blue: #0095f6; --text: #fff;
             --glass: rgba(255, 255, 255, 0.1); --border: #262626;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -23,19 +24,17 @@
 
         /* HEADER & STORIES */
         .app-header { background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 1000; }
-        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; gap:12px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; gap:12px; position:relative; }
         .logo { font-size: 24px; font-weight: 900; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
+
+        /* search */
+        .search-wrap { flex:1; display:flex; justify-content:center; }
+        #globalSearch { width:60%; max-width:560px; padding:10px 14px; border-radius:12px; border:1px solid #222; background:#0b0b0b; color:#fff; outline:none; }
+        #searchResultsBox { position:absolute; top:64px; left:50%; transform:translateX(-50%); width:60%; max-width:560px; display:none; z-index:12000; max-height:300px; overflow:auto; background:#0f0f0f; border:1px solid #222; border-radius:10px; padding:8px; }
+
         .stories-bar { display: flex; gap: 15px; padding: 10px 15px; overflow-x: auto; scrollbar-width: none; }
         .story-ring { width: 68px; height: 68px; border-radius: 50%; padding: 3px; background: linear-gradient(45deg, #f9ed32, #ee2a7b, #002aff); flex-shrink: 0; cursor: pointer; }
         .story-pfp { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #111; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; }
-
-        /* Search UI */
-        .search-wrap { display:flex; align-items:center; gap:8px; }
-        #globalSearch { width: 260px; max-width:40vw; padding:10px 12px; border-radius: 12px; border:1px solid #333; background:#050505; color:white; }
-        #searchResults { display:none; position: absolute; left:20px; right:20px; top:72px; z-index:12000; background: rgba(12,12,12,0.98); border:1px solid #222; border-radius:12px; max-height:380px; overflow:auto; padding:8px; box-shadow:0 10px 40px rgba(0,0,0,0.7); }
-        .sr-item{padding:10px;border-radius:10px;margin:6px 4px;display:flex;gap:10px;align-items:center;cursor:pointer}
-        .sr-item:hover{background:rgba(255,255,255,0.02)}
 
         /* STORY VIEWER MODAL */
         #storyViewer { position: fixed; inset: 0; background: #000; z-index: 10001; display: none; flex-direction: column; }
@@ -52,9 +51,9 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* FEED */
-        .video-card { margin-bottom: 20px; background: #000; border-bottom: 1px solid #111; padding-bottom:8px; border-radius:8px; overflow:hidden; }
+        .video-card { margin-bottom: 20px; background: #000; border-bottom: 1px solid #111; }
         .video-card video { width: 100%; aspect-ratio: 16/9; display: block; background: #111; }
-        .v-body { padding: 15px; display: flex; gap: 12px; align-items:center; }
+        .v-body { padding: 15px; display: flex; gap: 12px; }
         .avatar-v { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; border: 1px solid #333; }
         .v-actions { display: flex; justify-content: space-between; padding: 10px 20px 20px; }
         .act-group { display: flex; gap: 20px; }
@@ -130,14 +129,17 @@
 
     <header class="app-header" id="hMain">
         <div class="top-nav">
-            <div style="display:flex;align-items:center;gap:12px">
-                <div class="logo">Nexus</div>
-                <div class="search-wrap">
-                    <input id="globalSearch" class="auth-input" placeholder="Buscar usuarios o videos...">
-                </div>
+            <div class="logo">Nexus</div>
+
+            <!-- SEARCH -->
+            <div class="search-wrap">
+                <input id="globalSearch" placeholder="Buscar usuarios o videos..." />
+                <div id="searchResultsBox"></div>
             </div>
-            <div id="myAvatar" class="avatar-v" style="width:34px; height:34px" onclick="changePage('profilePage', null)"></div>
+
+            <div id="myAvatar" class="avatar-v" style="width:34px; height:34px; cursor:pointer" onclick="changePage('profilePage', null)"></div>
         </div>
+
         <div class="stories-bar" id="storyBar">
             <div class="story-item" onclick="openModal('storyUpModal')" style="text-align:center; font-size:11px">
                 <div class="story-ring" style="background:#222"><div class="story-pfp" style="color:var(--blue)">+</div></div>
@@ -146,17 +148,15 @@
         </div>
     </header>
 
-    <div id="searchResults"></div>
-
     <div id="homePage" class="page active-page"></div>
     <div id="shortsPage" class="page"></div>
     <div id="inboxPage" class="page"><h3 style="padding:20px 20px 0">Mensajes</h3><div id="chatList"></div></div>
-    
+
     <div id="profilePage" class="page">
         <div style="text-align:center; padding:50px 20px 20px">
             <div id="pBigAvatar" class="avatar-v" style="width:100px; height:100px; margin:0 auto; font-size:40px; border:3px solid var(--border)"></div>
             <h2 id="pNameDisp" style="margin:15px 0 5px; font-weight:800"></h2>
-            
+
             <div class="profile-stats">
                 <div class="stat-item"><span class="stat-val" id="statFollowers">0</span><span class="stat-lbl">Seguidores</span></div>
                 <div class="stat-item"><span class="stat-val" id="statFollowing">0</span><span class="stat-lbl">Siguiendo</span></div>
@@ -170,13 +170,13 @@
 
     <div id="chatView" class="chat-view">
         <div class="chat-header">
-            <i class="fas fa-arrow-left" onclick="closeChat()" style="font-size:20px"></i>
+            <i class="fas fa-arrow-left" onclick="closeChat()" style="font-size:20px; cursor:pointer"></i>
             <div id="chatContactAvatar" class="avatar-v" style="width:35px; height:35px"></div>
             <b id="chatContactName">Usuario</b>
         </div>
         <div class="messages-area" id="msgArea"></div>
         <div class="chat-input-area" style="padding:15px; display:flex; gap:10px; background:#000; align-items:center">
-            <i class="fas fa-image" onclick="sendMediaMsg('image')" style="color:#888; font-size:22px"></i>
+            <i class="fas fa-image" onclick="sendMediaMsg('image')" style="color:#888; font-size:22px; cursor:pointer"></i>
             <input type="text" id="msgInput" class="auth-input" style="margin:0; flex:1" placeholder="Escribe...">
             <button class="act-btn" style="color:var(--blue); font-size:20px" onclick="sendTextMsg()"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -190,7 +190,7 @@
 
     <div id="commentModal" class="modal">
         <div class="modal-box">
-            <i class="fas fa-times close-modal" onclick="closeModal('commentModal')"></i>
+            <i class="fas fa-times close-modal" onclick="closeModal('commentModal')" style="cursor:pointer"></i>
             <h3 style="margin-top: 0;">Comentarios</h3>
             <div id="commList" style="max-height:300px; overflow-y:auto; margin-bottom:15px; font-size:14px"></div>
             <div style="display:flex; gap:10px">
@@ -224,8 +224,12 @@
         <a href="#" class="nav-link" onclick="changePage('profilePage', this)"><i class="fas fa-user"></i></a>
     </nav>
 
-    <!-- ========== MAIN APP SCRIPT (tu código, con adaptaciones Supabase) ========== -->
+    <!-- Supabase JS CDN (necesario) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.1/dist/supabase.min.js"></script>
+
+    <!-- === AQUI VA TODO TU JAVASCRIPT ORIGINAL (app principal) === -->
     <script>
+        /* ------------------ APP: IndexedDB + UI (tu código original) ------------------ */
         let db;
         let isReg = false;
         // local saved user (from previous login)
@@ -248,12 +252,12 @@
             if (!db.objectStoreNames.contains("stories")) db.createObjectStore("stories", { keyPath: "id", autoIncrement: true });
             if (!db.objectStoreNames.contains("chats")) db.createObjectStore("chats", { keyPath: "id", autoIncrement: true });
         };
-        request.onsuccess = e => { 
-            db = e.target.result; 
-            if(user) { 
-                document.getElementById('authOverlay').style.display='none'; 
+        request.onsuccess = e => {
+            db = e.target.result;
+            if(user) {
+                document.getElementById('authOverlay').style.display='none';
                 autoCleanup();
-                init(); 
+                init();
             }
         };
 
@@ -303,8 +307,10 @@
         function init() {
             setAvatar(document.getElementById('myAvatar'), user);
             setAvatar(document.getElementById('pBigAvatar'), user);
-            document.getElementById('pNameDisp').innerText = user.name;
-            document.getElementById('pEmailDisp').innerText = user.email;
+            if (user) {
+                document.getElementById('pNameDisp').innerText = user.name;
+                document.getElementById('pEmailDisp').innerText = user.email;
+            }
             updateProfileStats();
             renderHome();
             renderStories();
@@ -312,6 +318,7 @@
         }
 
         function updateProfileStats() {
+            if(!user) return;
             db.transaction("users").objectStore("users").get(user.email).onsuccess = e => {
                 const u = e.target.result;
                 if(!u) return;
@@ -326,7 +333,8 @@
         }
 
         function setAvatar(el, u) {
-            if(!u) return;
+            if(!el) return;
+            if(!u) { el.innerText = '?'; el.style.background = '#333'; return; }
             if(u.pfp) el.innerHTML = `<img src="${u.pfp}" style="width:100%; height:100%; object-fit:cover">`;
             else { el.innerText = u.name ? u.name[0].toUpperCase() : '?'; el.style.background = u.color || '#333'; }
         }
@@ -419,7 +427,7 @@
 
         function loadMessages() {
             db.transaction("chats").objectStore("chats").getAll().onsuccess = e => {
-                const conversation = e.target.result.filter(m => 
+                const conversation = e.target.result.filter(m =>
                     (m.from === user.email && m.to === activeChatEmail) || (m.from === activeChatEmail && m.to === user.email)
                 ).sort((a,b) => a.timestamp - b.timestamp);
 
@@ -427,14 +435,14 @@
                 area.innerHTML = conversation.map(m => {
                     const isMe = m.from === user.email;
                     if(!isMe && !m.seen) markAsSeen(m.id);
-                    let body = m.type === 'text' ? `<span>${escapeHtml(m.content)}</span>` : 
-                               (m.type === 'image' ? `<img src="${m.content}" style="max-width:200px; border-radius:10px">` : 
+                    let body = m.type === 'text' ? `<span>${escapeHtml(m.content)}</span>` :
+                               (m.type === 'image' ? `<img src="${m.content}" style="max-width:200px; border-radius:10px">` :
                                `<video src="${m.content}" controls style="max-width:200px; border-radius:10px"></video>`);
 
                     return `<div class="msg-bubble ${isMe ? 'msg-me' : 'msg-them'}">
                                 ${body}
                                 <div style="font-size:9px; opacity:0.6; text-align:right; margin-top:4px">
-                                    ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} 
+                                    ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                                     ${isMe ? (m.seen ? '<i class="fas fa-check-double" style="color:#fff"></i>' : '<i class="fas fa-check"></i>') : ''}
                                 </div>
                             </div>`;
@@ -446,9 +454,9 @@
         function markAsSeen(id) {
             const tx = db.transaction("chats","readwrite");
             const st = tx.objectStore("chats");
-            st.get(id).onsuccess = e => { 
-                const m = e.target.result; 
-                if(m) { m.seen=true; st.put(m); } 
+            st.get(id).onsuccess = e => {
+                const m = e.target.result;
+                if(m) { m.seen=true; st.put(m); }
             };
         }
 
@@ -479,15 +487,15 @@
                 container.innerHTML = '';
                 list.forEach(v => {
                     let src = '';
-                    if(v.blob && typeof v.blob === 'string') src = v.blob;               // public URL or base64
-                    else if(v.file) src = URL.createObjectURL(v.file); // File stored in IDB
-                    else if(v.fileBlob) src = URL.createObjectURL(v.fileBlob);
-                    // Build card, include data-vid attribute for search jump
+                    if(v.blob) src = v.blob;               // old base64 url or remote public url
+                    else if(v.file) try { src = URL.createObjectURL(v.file); } catch(err) { src = ''; }
+                    else if(v.fileBlob) try { src = URL.createObjectURL(v.fileBlob); } catch(err) { src = ''; }
+                    // Build card
                     container.innerHTML += `
-                    <div class="video-card" data-vid="${v.id}">
+                    <div class="video-card">
                         <video src="${src}" controls preload="metadata"></video>
                         <div class="v-body">
-                            <div class="avatar-v" style="background:${v.color}">${v.pfp?`<img src="${v.pfp}" style="width:100%;height:100%;object-fit:cover">`: (v.author?v.author[0]:'?')}</div>
+                            <div class="avatar-v" style="background:${v.color}">${v.pfp?`<img src="${v.pfp}" style="width:100%;height:100%;object-fit:cover">`:v.author[0]}</div>
                             <div style="flex:1"><b>${escapeHtml(v.title)}</b><br><small style="color:#666">${escapeHtml(v.author)}</small></div>
                             ${v.email === user.email ? `<button class="del-btn-mini" onclick="deleteContent('videos', ${v.id})">Borrar</button>` : `<button onclick="toggleSub('${v.email}')" style="background:${(user.following||[]).includes(v.email)?'#222':'var(--blue)'}; color:white; border:none; padding:6px 15px; border-radius:10px; font-weight:600; font-size:12px">${(user.following||[]).includes(v.email)?'Siguiendo':'Seguir'}</button>`}
                         </div>
@@ -503,56 +511,27 @@
             };
         }
 
+        // modified upVideo: it checks if bridge already uploaded and uses that publicUrl
         async function upVideo() {
             const f = document.getElementById('vFile').files[0], t = document.getElementById('vTitle').value.trim(), tp = document.getElementById('vT').value;
-            if(!f) return alert("Selecciona un archivo");
-
-            // Preferir subir a Supabase (si el bridge está disponible)
-            const bridge = window.nexus_bridge || null;
-            try {
-                if(bridge && typeof bridge.uploadFileToStorage === 'function'){
-                    // upload via bridge helper (returns { publicUrl, path })
-                    const res = await bridge.uploadFileToStorage(bridge.config?.VIDEOS_BUCKET || 'videos', f);
-                    const publicUrl = (res && res.publicUrl) ? res.publicUrl : res;
-                    const remote_path = res && res.path ? res.path : null;
-
-                    const vid = { 
-                        title: t || f.name, 
-                        blob: publicUrl, 
-                        remote_url: publicUrl, 
-                        remote_path: remote_path, 
-                        type: tp, 
-                        author: user.name, 
-                        email: user.email, 
-                        pfp: user.pfp, 
-                        color: user.color, 
-                        likedBy: [], 
-                        comms:[], 
-                        timestamp: Date.now(),
-                        synced: true
-                    };
-                    db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => {
-                        // create remote record as well (bridge will do if available)
-                        if(typeof bridge.createRemoteVideoRecord === 'function'){
-                            bridge.createRemoteVideoRecord({
-                                title: vid.title, url: publicUrl, remote_path: remote_path, type: vid.type, author: vid.author, email: vid.email, pfp: vid.pfp, color: vid.color, timestamp: vid.timestamp
-                            });
-                        }
-                        closeModal('uploadModal');
-                        setTimeout(()=>{ if(typeof renderHome==='function') renderHome(); },400);
-                    };
-                    return;
-                }
-            } catch(err){
-                console.warn("Subida via bridge falló, fallback local:", err);
+            if(!f && !window._bridge_last_upload) return alert("Selecciona un archivo");
+            // If bridge already uploaded this file earlier, it stores info in window._bridge_last_upload
+            if(window._bridge_last_upload && window._bridge_last_upload.url) {
+                const binfo = window._bridge_last_upload;
+                const vid = { title: t || binfo.title || f?.name || 'Untitled', blob: binfo.url, remote_url: binfo.url, type: tp, author: user.name, email: user.email, pfp: user.pfp, color: user.color, likedBy: [], comms:[], timestamp: Date.now(), synced: true };
+                db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => {
+                    // clear marker
+                    window._bridge_last_upload = null;
+                    location.reload();
+                };
+                return;
             }
-
-            // fallback (sin Supabase): store File in IDB or base64
+            // fallback: store File in IDB (structured clone)
+            if(!f) return alert("Archivo no encontrado.");
             try {
                 const vid = { title:t, blob:null, file: f, type:tp, author:user.name, email:user.email, pfp:user.pfp, color:user.color, likedBy: [], comms:[], timestamp: Date.now() };
                 db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => location.reload();
             } catch(err) {
-                // fallback: convert small files to base64
                 const b = await toB64(f);
                 const vid = { title:t, blob:b, type:tp, author:user.name, email:user.email, pfp:user.pfp, color:user.color, likedBy: [], comms:[], timestamp: Date.now() };
                 db.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = () => location.reload();
@@ -575,10 +554,8 @@
         function confirmShare(email, name) {
             db.transaction("videos").objectStore("videos").get(activeVidId).onsuccess = e => {
                 const v = e.target.result;
-                // prefer to share stored blob/file as base64 for chat (small) — for big files you'd implement cloud share link
                 let content = v.blob || null;
                 if(!content && v.file) {
-                    // small optimization: don't convert large files to base64; createObjectURL and send not persistent
                     content = URL.createObjectURL(v.file);
                 }
                 const msg = { from: user.email, to: email, type: 'video', content: content || '', timestamp: Date.now(), seen:false };
@@ -629,30 +606,6 @@
 
         function upStory() {
             const f = document.getElementById('sFile').files[0]; if(!f) return;
-            const bridge = window.nexus_bridge || null;
-            if(bridge && typeof bridge.uploadFileToStorage === 'function'){
-                // upload directly via bridge
-                bridge.uploadFileToStorage(bridge.config?.STORIES_BUCKET || 'stories', f).then(res=>{
-                    const publicUrl = (res && res.publicUrl) ? res.publicUrl : res;
-                    const remote_path = res && res.path ? res.path : null;
-                    const story = { img: publicUrl, remote_path: remote_path, author: user.name, email: user.email, color:user.color, pfp:user.pfp, created: Date.now(), synced: true };
-                    db.transaction("stories","readwrite").objectStore("stories").add(story).onsuccess = () => {
-                        if(typeof bridge.createRemoteStoryRecord === 'function') bridge.createRemoteStoryRecord({ img: publicUrl, remote_path: remote_path, author: story.author, email: story.email, pfp: story.pfp, color: story.color, created: story.created });
-                        setTimeout(()=>{ if(typeof renderStories==='function') renderStories(); },300);
-                        closeModal('storyUpModal');
-                    };
-                }).catch(err=>{
-                    console.error("Error subida story bridge:",err);
-                    // fallback to dataURL
-                    const r = new FileReader(); r.readAsDataURL(f);
-                    r.onload = () => {
-                        const s = { img:r.result, author:user.name, email:user.email, color:user.color, pfp:user.pfp, created: Date.now() };
-                        db.transaction("stories","readwrite").objectStore("stories").add(s).onsuccess = () => location.reload();
-                    };
-                });
-                return;
-            }
-            // fallback: store as dataURL
             const r = new FileReader(); r.readAsDataURL(f);
             r.onload = () => {
                 const s = { img:r.result, author:user.name, email:user.email, color:user.color, pfp:user.pfp, created: Date.now() };
@@ -694,7 +647,7 @@
                 list.forEach(s => {
                     let src = s.blob || (s.file ? URL.createObjectURL(s.file) : '');
                     container.innerHTML += `
-                        <div class="short-frame" data-vid="${s.id}">
+                        <div class="short-frame">
                             <video src="${src}" loop playsinline onclick="this.paused?this.play():this.pause()"></video>
                             <div class="short-side">
                                 <div class="avatar-v" style="background:${s.color}; border:2px solid white">${s.pfp?`<img src="${s.pfp}" style="width:100%;height:100%;object-fit:cover">`:s.author[0]}</div>
@@ -711,45 +664,19 @@
             };
         }
 
-        // DELETE: ahora intenta borrar de Supabase (storage + tabla remota) si existe remote_path
-        async function deleteContent(store, id) { 
-            if(!confirm("¿Borrar?")) return;
-            try {
-                const tx = db.transaction(store, "readwrite");
-                const st = tx.objectStore(store);
-                st.get(id).onsuccess = async (e) => {
-                    const rec = e.target.result;
-                    if(!rec) return;
-                    const bridge = window.nexus_bridge || null;
-                    if(bridge && bridge.supabase){
-                        try {
-                            // si tenemos remote_path, borrar del storage
-                            if(rec.remote_path){
-                                await bridge.supabase.storage.from(bridge.config?.VIDEOS_BUCKET || 'videos').remove([rec.remote_path]);
-                            } else if(rec.remote_url){
-                                // intentar derivar path (no siempre posible); si tienes saved remote_path prefer usarlo
-                                // fallback: we won't try to derive automatically
-                            }
-                            // borrar fila en tabla remota por remote_path o por url
-                            if(rec.remote_path){
-                                await bridge.supabase.from('videos').delete().eq('remote_path', rec.remote_path);
-                            } else if(rec.remote_url){
-                                await bridge.supabase.from('videos').delete().eq('url', rec.remote_url);
-                            } else {
-                                // si no hay datos remotos, no hay nada que borrar en Supabase
-                            }
-                        } catch(err){
-                            console.warn("Error borrando en Supabase (continuando con borrado local):", err);
-                        }
-                    }
-                    // borrar local
-                    st.delete(id).onsuccess = () => {
-                        if(typeof renderHome === 'function') setTimeout(()=>renderHome(),250);
-                    };
-                };
-            } catch(err){
-                console.error("deleteContent error:",err);
-            }
+        // deleteContent: owner or admin (mihaelefrain@gmail.com) can delete
+        function deleteContent(store, id) {
+            const adminEmail = 'mihaelefrain@gmail.com';
+            if(!user) return alert('Debes iniciar sesión');
+            db.transaction(store).objectStore(store).get(id).onsuccess = e => {
+                const item = e.target.result;
+                if(!item) return alert('No encontrado');
+                if(item.email === user.email || user.email === adminEmail) {
+                    if(confirm("¿Borrar?")) db.transaction(store, "readwrite").objectStore(store).delete(id).onsuccess = () => location.reload();
+                } else {
+                    alert('No tienes permisos para borrar este contenido.');
+                }
+            };
         }
 
         function toB64(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); }); }
@@ -775,122 +702,64 @@
             });
         }
 
-        /* ========== SEARCH - simple client search that queries IDB and shows results ========== */
-        (function(){
+        // search box behaviour (simple client-side)
+        (function() {
             const input = document.getElementById('globalSearch');
-            const resultsBox = document.getElementById('searchResults');
-            let timer=null;
-            input.addEventListener('input', (e) => {
-                clearTimeout(timer);
-                timer = setTimeout(()=>performSearch(e.target.value.trim()), 220);
+            const resultsBox = document.getElementById('searchResultsBox');
+            let hideTimer = null;
+            input.addEventListener('input', async () => {
+                const q = input.value.trim().toLowerCase();
+                if(!q) { resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
+                // search users and videos in IndexedDB
+                const usersPromise = new Promise(res => db.transaction('users').objectStore('users').getAll().onsuccess = e => res(e.target.result || []));
+                const vidsPromise = new Promise(res => db.transaction('videos').objectStore('videos').getAll().onsuccess = e => res(e.target.result || []));
+                const [users, vids] = await Promise.all([usersPromise, vidsPromise]);
+                const ures = users.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)).slice(0,6);
+                const vres = vids.filter(v => (v.title||'').toLowerCase().includes(q) || (v.author||'').toLowerCase().includes(q)).slice(0,6);
+                resultsBox.innerHTML = '';
+                if(ures.length === 0 && vres.length === 0) resultsBox.innerHTML = '<div style="padding:8px;color:#aaa">Sin resultados</div>';
+                ures.forEach(u => resultsBox.innerHTML += `<div style="padding:8px; border-bottom:1px solid #111; cursor:pointer" onclick="changePage('profilePage'); document.getElementById('pNameDisp').innerText='${escapeHtml(u.name)}'; document.getElementById('pEmailDisp').innerText='${escapeHtml(u.email)}'; resultsBox.style.display='none'">${escapeHtml(u.name)} <small style="color:#666">(${escapeHtml(u.email)})</small></div>`);
+                vres.forEach(v => resultsBox.innerHTML += `<div style="padding:8px; border-bottom:1px solid #111; cursor:pointer" onclick="changePage('homePage'); resultsBox.style.display='none'">${escapeHtml(v.title)} <small style="color:#666">- ${escapeHtml(v.author)}</small></div>`);
+                resultsBox.style.display='block';
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(()=>{ resultsBox.style.display='none'; }, 8000);
             });
-
-            async function performSearch(q){
-                if(!q){ resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
-                // search users and videos
-                try {
-                    const users = await new Promise(res=> db.transaction('users').objectStore('users').getAll().onsuccess = ev => res(ev.target.result || []));
-                    const videos = await new Promise(res=> db.transaction('videos').objectStore('videos').getAll().onsuccess = ev => res(ev.target.result || []));
-                    const uq = q.toLowerCase();
-                    const userMatches = users.filter(u => (u.name && u.name.toLowerCase().includes(uq)) || (u.email && u.email.toLowerCase().includes(uq))).slice(0,10);
-                    const videoMatches = videos.filter(v => (v.title && v.title.toLowerCase().includes(uq)) || (v.author && v.author.toLowerCase().includes(uq))).slice(0,15);
-
-                    let html = '';
-                    if(userMatches.length){
-                        html += `<div style="padding:6px 10px; color:#bbb; font-size:12px">Usuarios</div>`;
-                        userMatches.forEach(u=>{
-                            html += `<div class="sr-item" data-type="user" data-email="${u.email}">
-                                <div class="avatar-v" style="width:40px;height:40px;background:${u.color}">${u.pfp?`<img src="${u.pfp}" style="width:100%;height:100%;object-fit:cover">`: (u.name?u.name[0]:'?')}</div>
-                                <div style="flex:1"><b>${escapeHtml(u.name)}</b><br><small style="color:#888">${escapeHtml(u.email)}</small></div>
-                            </div>`;
-                        });
-                    }
-                    if(videoMatches.length){
-                        html += `<div style="padding:6px 10px; color:#bbb; font-size:12px">Videos</div>`;
-                        videoMatches.forEach(v=>{
-                            html += `<div class="sr-item" data-type="video" data-vid="${v.id}">
-                                <div style="width:44px;height:44px;border-radius:6px;background:#111;display:flex;align-items:center;justify-content:center">${v.title?escapeHtml(v.title.substring(0,2)):'V'}</div>
-                                <div style="flex:1"><b>${escapeHtml(v.title)}</b><br><small style="color:#888">${escapeHtml(v.author||'')}</small></div>
-                            </div>`;
-                        });
-                    }
-                    if(!html) html = `<div style="padding:12px; color:#777; text-align:center">No se encontraron resultados</div>`;
-                    resultsBox.innerHTML = html;
-                    resultsBox.style.display = 'block';
-
-                    // delegate clicks
-                    resultsBox.querySelectorAll('.sr-item').forEach(it=>{
-                        it.onclick = () => {
-                            const ty = it.getAttribute('data-type');
-                            if(ty === 'user'){
-                                const email = it.getAttribute('data-email');
-                                // open profile (find user and navigate to profilePage)
-                                db.transaction('users').objectStore('users').get(email).onsuccess = ev => {
-                                    const u = ev.target.result;
-                                    if(u){
-                                        // create a temporary profile view: set fields and go to profilePage
-                                        setAvatar(document.getElementById('pBigAvatar'), u);
-                                        document.getElementById('pNameDisp').innerText = u.name;
-                                        document.getElementById('pEmailDisp').innerText = u.email;
-                                        // show profile page
-                                        changePage('profilePage');
-                                        resultsBox.style.display='none';
-                                    }
-                                };
-                            } else {
-                                const vid = it.getAttribute('data-vid');
-                                // go to homePage and scroll to video card
-                                changePage('homePage');
-                                setTimeout(()=>{
-                                    const el = document.querySelector(`[data-vid="${vid}"]`);
-                                    if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.style.boxShadow='0 6px 30px rgba(0,0,0,0.6)'; setTimeout(()=>el.style.boxShadow='none',1800); }
-                                    resultsBox.style.display='none';
-                                },250);
-                            }
-                        };
-                    });
-
-                } catch(err){
-                    console.error("Search error",err);
-                    resultsBox.style.display='none';
-                }
-            }
-
-            // hide on outside click
-            document.addEventListener('click', (e) => {
-                if(!resultsBox.contains(e.target) && e.target !== input) resultsBox.style.display='none';
-            });
+            document.addEventListener('click', (ev)=>{ if(!resultsBox.contains(ev.target) && ev.target !== input) resultsBox.style.display='none'; });
         })();
 
     </script>
 
-    <!-- ========== SUPABASE CDN (necesario para el bridge) ========== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.1/dist/supabase.min.js"></script>
-
-    <!-- ========== NEXUS BRIDGE INLINE (subidas a Storage, sync chats, presence) ========== -->
+    <!-- ================= BRIDGE SUPABASE INLINE ================= -->
     <script>
-    /* gateway bridge (inline). If you already loaded a bridge separately, remove this block to avoid duplicate declarations. */
-    if(!window._nexus_bridge_loaded){
-      window._nexus_bridge_loaded = true;
+    (function(){
+      // === CONFIG: reemplaza si quieres por tus propias credenciales ===
+      const SUPABASE_URL = "https://dmlwrwovwzvcfeoxyxtb.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbHdyd292d3p2Y2Zlb3h5eHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NjMzNTgsImV4cCI6MjA4MzIzOTM1OH0.hukw5FC7S3gV-4PFh1Bskj9dm_7qsNTrrKVJqh2ORMQ";
+      const VIDEOS_BUCKET = "videos";
+      const STORIES_BUCKET = "stories";
+      const POLL_INTERVAL_MS = 2000;
+      const ADMIN_EMAIL = 'mihaelefrain@gmail.com';
 
-      (function () {
-        // CONFIG - reemplaza si quieres otros valores
-        const SUPABASE_URL = "https://dmlwrwovwzvcfeoxyxtb.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbHdyd292d3p2Y2Zlb3h5eHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NjMzNTgsImV4cCI6MjA4MzIzOTM1OH0.hukw5FC7S3gV-4PFh1Bskj9dm_7qsNTrrKVJqh2ORMQ";
-        const VIDEOS_BUCKET = "videos";
-        const STORIES_BUCKET = "stories";
-        const POLL_INTERVAL_MS = 2000;
+      // Use existing user variable from app
+      window.user = window.user || JSON.parse(localStorage.getItem('nexus_v9_user') || 'null');
+      const userRef = window.user || null;
 
-        // use existing window.user/db
-        window.user = window.user || JSON.parse(localStorage.getItem('nexus_v9_user') || 'null');
-        const user = window.user || null;
+      // ensure supabase loaded
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        console.warn("Supabase JS no encontrado o carga lenta. El bridge esperará a que esté disponible.");
+        // wait for it (try every 300ms up to 10s)
+        const start = Date.now();
+        (function waitSup() {
+          if(window.supabase && typeof window.supabase.createClient === 'function') { initBridge(); return; }
+          if(Date.now()-start > 10000) { console.error("Supabase CDN no cargó en 10s. Bridge abortado."); return; }
+          setTimeout(waitSup,300);
+        })();
+      } else initBridge();
 
-        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-          console.warn("Supabase JS no encontrado o carga lenta. El bridge esperará a que esté disponible.");
-        }
+      function initBridge(){
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
+        // helper: wait for window.db (IndexedDB) ready
         function waitForDB(timeout = 15000) {
           return new Promise((resolve, reject) => {
             const start = Date.now();
@@ -912,15 +781,13 @@
           return new Blob([u8arr], { type: mime });
         }
 
-        // MOD: devuelve { publicUrl, path } para poder borrar luego por path
         async function uploadFileToStorage(bucket, file, path) {
-          if(!supabase) throw new Error("Supabase no inicializado");
           try {
-            const filePath = path || `${user ? user.email.replace(/[@.]/g, '_') : 'anon'}_${Date.now()}_${file.name}`;
-            const { error } = await supabase.storage.from(bucket).upload(filePath, file, { upsert: false });
+            const filePath = path || `${(userRef ? userRef.email.replace(/[@.]/g, '_') : 'anon')}_${Date.now()}_${file.name}`;
+            const { error } = await supabase.storage.from(bucket).upload(filePath, file, { upsert: true });
             if (error) throw error;
             const { data: pub } = supabase.storage.from(bucket).getPublicUrl(filePath);
-            return { publicUrl: pub.publicUrl, path: filePath };
+            return pub.publicUrl;
           } catch (err) {
             console.error("uploadFileToStorage error:", err);
             throw err;
@@ -928,17 +795,27 @@
         }
 
         async function createRemoteVideoRecord(meta) {
-          if(!supabase) return;
-          try { const { error } = await supabase.from('videos').insert([meta]); if (error) console.error("createRemoteVideoRecord:", error); } catch (err) { console.error(err); }
-        }
-        async function createRemoteStoryRecord(meta) {
-          if(!supabase) return;
-          try { const { error } = await supabase.from('stories').insert([meta]); if (error) console.error("createRemoteStoryRecord:", error); } catch (err) { console.error(err); }
+          try {
+            const { error } = await supabase.from('videos').insert([meta]);
+            if (error) console.error("createRemoteVideoRecord:", error);
+          } catch (err) {
+            console.error("createRemoteVideoRecord:", err);
+          }
         }
 
-        async function syncLocalVideos(db) {
+        async function createRemoteStoryRecord(meta) {
           try {
-            const tx = db.transaction("videos", "readwrite");
+            const { error } = await supabase.from('stories').insert([meta]);
+            if (error) console.error("createRemoteStoryRecord:", error);
+          } catch (err) {
+            console.error("createRemoteStoryRecord:", err);
+          }
+        }
+
+        // sync local Base64 videos (older ones) -> upload
+        async function syncLocalVideos(dbRef) {
+          try {
+            const tx = dbRef.transaction("videos", "readwrite");
             const store = tx.objectStore("videos");
             store.getAll().onsuccess = async (e) => {
               const list = e.target.result || [];
@@ -947,38 +824,36 @@
                   try {
                     const blob = dataURLtoBlob(v.blob);
                     const file = new File([blob], (v.title || 'video') + '.webm', { type: blob.type || 'video/webm' });
-                    const { publicUrl, path } = await uploadFileToStorage(VIDEOS_BUCKET, file);
+                    const publicUrl = await uploadFileToStorage(VIDEOS_BUCKET, file);
                     v.blob = publicUrl;
                     v.remote_url = publicUrl;
-                    v.remote_path = path;
                     v.synced = true;
                     store.put(v);
                     createRemoteVideoRecord({
-                      title: v.title || 'Untitled', url: publicUrl, remote_path: path, type: v.type || 'video',
-                      author: v.author || (user && user.name) || null, email: v.email || (user && user.email) || null,
-                      pfp: v.pfp || (user && user.pfp) || null, color: v.color || (user && user.color) || null,
+                      title: v.title || 'Untitled',
+                      url: publicUrl,
+                      type: v.type || 'video',
+                      author: v.author || (userRef && userRef.name) || null,
+                      email: v.email || (userRef && userRef.email) || null,
+                      pfp: v.pfp || (userRef && userRef.pfp) || null,
+                      color: v.color || (userRef && userRef.color) || null,
                       timestamp: v.timestamp || Date.now()
                     });
                     console.info("Video subido y actualizado local:", publicUrl);
-                  } catch (err) { console.error("Error subiendo video local:", err); }
-                } else if (v.file && !v.synced) {
-                  // if stored as File object in IDB
-                  try {
-                    const file = v.file;
-                    const { publicUrl, path } = await uploadFileToStorage(VIDEOS_BUCKET, file);
-                    v.blob = publicUrl; v.remote_url = publicUrl; v.remote_path = path; v.synced = true; store.put(v);
-                    createRemoteVideoRecord({ title: v.title || 'Untitled', url: publicUrl, remote_path: path, type: v.type || 'video', author: v.author, email: v.email, pfp: v.pfp, color: v.color, timestamp: v.timestamp || Date.now() });
-                    console.info("Video file subido y actualizado local:", publicUrl);
-                  } catch(err){ console.error("Error subiendo file:", err); }
+                  } catch (err) {
+                    console.error("Error subiendo video local:", err);
+                  }
                 }
               }
             };
-          } catch (err) { console.error("syncLocalVideos error:", err); }
+          } catch (err) {
+            console.error("syncLocalVideos error:", err);
+          }
         }
 
-        async function syncLocalStories(db) {
+        async function syncLocalStories(dbRef) {
           try {
-            const tx = db.transaction("stories", "readwrite");
+            const tx = dbRef.transaction("stories", "readwrite");
             const store = tx.objectStore("stories");
             store.getAll().onsuccess = async (e) => {
               const list = e.target.result || [];
@@ -987,17 +862,32 @@
                   try {
                     const blob = dataURLtoBlob(s.img);
                     const file = new File([blob], `story_${Date.now()}.png`, { type: blob.type || 'image/png' });
-                    const { publicUrl, path } = await uploadFileToStorage(STORIES_BUCKET, file);
-                    s.img = publicUrl; s.remote_url = publicUrl; s.remote_path = path; s.synced = true; store.put(s);
-                    createRemoteStoryRecord({ img: publicUrl, remote_path: path, author: s.author || (user && user.name) || null, email: s.email || (user && user.email) || null, pfp: s.pfp || (user && user.pfp) || null, color: s.color || (user && user.color) || null, created: s.created || Date.now() });
+                    const publicUrl = await uploadFileToStorage(STORIES_BUCKET, file);
+                    s.img = publicUrl;
+                    s.remote_url = publicUrl;
+                    s.synced = true;
+                    store.put(s);
+                    createRemoteStoryRecord({
+                      img: publicUrl,
+                      author: s.author || (userRef && userRef.name) || null,
+                      email: s.email || (userRef && userRef.email) || null,
+                      pfp: s.pfp || (userRef && userRef.pfp) || null,
+                      color: s.color || (userRef && userRef.color) || null,
+                      created: s.created || Date.now()
+                    });
                     console.info("Story subido y actualizado local:", publicUrl);
-                  } catch (err) { console.error("Error subiendo story:", err); }
+                  } catch (err) {
+                    console.error("Error subiendo story:", err);
+                  }
                 }
               }
             };
-          } catch (err) { console.error("syncLocalStories error:", err); }
+          } catch (err) {
+            console.error("syncLocalStories error:", err);
+          }
         }
 
+        // Hooks to file inputs: upload immediately and add record local with URL.
         function hookFileInputs() {
           const vf = document.getElementById('vFile');
           if (vf) {
@@ -1005,22 +895,28 @@
               const file = ev.target.files[0];
               if (!file) return;
               try {
+                const publicUrl = await uploadFileToStorage(VIDEOS_BUCKET, file);
                 const dbRef = await waitForDB();
-                // if supabase available, upload first
-                if(supabase){
-                  const { publicUrl, path } = await uploadFileToStorage(VIDEOS_BUCKET, file);
-                  const vid = { title: (document.getElementById('vTitle')?.value) || file.name, blob: publicUrl, remote_url: publicUrl, remote_path: path, type: (document.getElementById('vT')?.value) || 'video', author: user ? user.name : 'anon', email: user ? user.email : null, pfp: user ? user.pfp : null, color: user ? user.color : null, likedBy: [], comms: [], timestamp: Date.now(), synced: true };
-                  dbRef.transaction("videos", "readwrite").objectStore("videos").add(vid).onsuccess = () => {
-                    createRemoteVideoRecord({ title: vid.title, url: publicUrl, remote_path: path, type: vid.type, author: vid.author, email: vid.email, pfp: vid.pfp, color: vid.color, timestamp: vid.timestamp });
-                    console.info("Bridge: video guardado local con URL:", publicUrl);
-                    // refresh UI
-                    setTimeout(()=>{ if(typeof renderHome==='function') renderHome(); },400);
-                  };
-                } else {
-                  // fallback: save File into IDB
-                  const vid = { title: file.name, blob:null, file: file, type: 'video', author:user?user.name:'anon', email:user?user.email:null, pfp:user?user.pfp:null, color:user?user.color:null, likedBy:[], comms:[], timestamp:Date.now(), synced:false };
-                  dbRef.transaction("videos","readwrite").objectStore("videos").add(vid).onsuccess = ()=>{ console.info("Bridge: video guardado local (no supabase)."); setTimeout(()=>{ if(typeof renderHome==='function') renderHome(); },300); };
-                }
+                const vid = {
+                  title: (document.getElementById('vTitle')?.value) || file.name,
+                  blob: publicUrl,
+                  remote_url: publicUrl,
+                  type: (document.getElementById('vT')?.value) || 'video',
+                  author: userRef ? userRef.name : 'anon',
+                  email: userRef ? userRef.email : null,
+                  pfp: userRef ? userRef.pfp : null,
+                  color: userRef ? userRef.color : null,
+                  likedBy: [],
+                  comms: [],
+                  timestamp: Date.now(),
+                  synced: true
+                };
+                dbRef.transaction("videos", "readwrite").objectStore("videos").add(vid).onsuccess = () => {
+                  // store last upload so upVideo won't duplicate
+                  window._bridge_last_upload = { url: publicUrl, title: vid.title, type: vid.type };
+                  createRemoteVideoRecord({ title: vid.title, url: publicUrl, type: vid.type, author: vid.author, email: vid.email, pfp: vid.pfp, color: vid.color, timestamp: vid.timestamp });
+                  console.info("Bridge: video guardado local con URL:", publicUrl);
+                };
               } catch (err) {
                 console.error("Error subiendo en hook vFile:", err);
               }
@@ -1033,24 +929,13 @@
               const file = ev.target.files[0];
               if (!file) return;
               try {
+                const publicUrl = await uploadFileToStorage(STORIES_BUCKET, file);
                 const dbRef = await waitForDB();
-                if(supabase){
-                  const { publicUrl, path } = await uploadFileToStorage(STORIES_BUCKET, file);
-                  const story = { img: publicUrl, remote_path: path, author: user ? user.name : 'anon', email: user ? user.email : null, color: user ? user.color : null, pfp: user ? user.pfp : null, created: Date.now(), synced: true };
-                  dbRef.transaction("stories", "readwrite").objectStore("stories").add(story).onsuccess = () => {
-                    createRemoteStoryRecord({ img: publicUrl, remote_path: path, author: story.author, email: story.email, pfp: story.pfp, color: story.color, created: story.created });
-                    console.info("Bridge: story guardada local con URL:", publicUrl);
-                    setTimeout(()=>{ if(typeof renderStories==='function') renderStories(); },300);
-                  };
-                } else {
-                  // fallback: store as dataURL quickly
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const s = { img: reader.result, author:user?user.name:'anon', email:user?user.email:null, color:user?user.color:null, pfp:user?user.pfp:null, created:Date.now(), synced:false };
-                    dbRef.transaction("stories","readwrite").objectStore("stories").add(s).onsuccess = ()=>{ console.info("Bridge: story guardada local (no supabase)."); setTimeout(()=>{ if(typeof renderStories==='function') renderStories(); },300); };
-                  };
-                  reader.readAsDataURL(file);
-                }
+                const story = { img: publicUrl, author: userRef ? userRef.name : 'anon', email: userRef ? userRef.email : null, color: userRef ? userRef.color : null, pfp: userRef ? userRef.pfp : null, created: Date.now(), synced: true };
+                dbRef.transaction("stories","readwrite").objectStore("stories").add(story).onsuccess = () => {
+                  createRemoteStoryRecord({ img: publicUrl, author: story.author, email: story.email, pfp: story.pfp, color: story.color, created: story.created });
+                  console.info("Bridge: story guardada local con URL:", publicUrl);
+                };
               } catch (err) {
                 console.error("Error subiendo en hook sFile:", err);
               }
@@ -1058,10 +943,10 @@
           }
         }
 
-        async function pushLocalChatsToRemote(db) {
-          if(!supabase) return;
+        // CHATS sync: push local unsynced -> remote
+        async function pushLocalChatsToRemote(dbRef) {
           try {
-            const tx = db.transaction("chats", "readwrite");
+            const tx = dbRef.transaction("chats", "readwrite");
             const store = tx.objectStore("chats");
             store.getAll().onsuccess = async (e) => {
               const all = e.target.result || [];
@@ -1084,51 +969,69 @@
                 }
               }
             };
-          } catch (err) { console.error("pushLocalChatsToRemote error:", err); }
+          } catch (err) {
+            console.error("pushLocalChatsToRemote error:", err);
+          }
         }
 
-        async function handleRemoteInsertToLocal(db, payload) {
+        // remote -> local handler
+        async function handleRemoteInsertToLocal(dbRef, payload) {
           try {
             const rec = payload.record;
-            const tx = db.transaction("chats", "readwrite");
+            const tx = dbRef.transaction("chats", "readwrite");
             const store = tx.objectStore("chats");
             store.getAll().onsuccess = (e) => {
               const all = e.target.result || [];
               const exists = all.some(m => (m.timestamp === rec.timestamp && m.from === rec.from && m.to === rec.to && m.content === rec.content));
               if (!exists) {
-                const local = { from: rec.from, to: rec.to, type: rec.type, content: rec.content, timestamp: rec.timestamp, seen: rec.seen, synced_remote: true };
+                const local = {
+                  from: rec.from,
+                  to: rec.to,
+                  type: rec.type,
+                  content: rec.content,
+                  timestamp: rec.timestamp,
+                  seen: rec.seen,
+                  synced_remote: true
+                };
                 store.add(local);
-                if(typeof renderInbox === 'function') setTimeout(()=>renderInbox(),200);
               }
             };
-          } catch (err) { console.error("handleRemoteInsertToLocal error:", err); }
+          } catch (err) {
+            console.error("handleRemoteInsertToLocal error:", err);
+          }
         }
 
-        function subscribeToRemoteChats(db) {
-          if(!supabase) return;
+        // subscribe to remote chat inserts
+        function subscribeToRemoteChats(dbRef) {
           try {
             const channel = supabase.channel('public:chats')
               .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, payload => {
+                if (!payload || !payload.record) return;
                 const rec = payload.record;
-                if (user && (rec.to === user.email || rec.from === user.email)) {
-                  handleRemoteInsertToLocal(db, payload);
+                if (userRef && (rec.to === userRef.email || rec.from === userRef.email)) {
+                  handleRemoteInsertToLocal(dbRef, payload);
                 }
               })
               .subscribe(status => {
                 if (status === 'SUBSCRIBED') console.info("Bridge: suscrito a chats remotos");
               });
             window._nexus_bridge_channel = channel;
-          } catch (err) { console.error("subscribeToRemoteChats error:", err); }
+          } catch (err) {
+            console.error("subscribeToRemoteChats error:", err);
+          }
         }
 
+        // presence (simple upsert)
         async function setPresenceOnline() {
-          if (!user || !supabase) return;
+          if (!userRef) return;
           try {
-            await supabase.from('presence').upsert([{ email: user.email, last_online: new Date().toISOString(), online: true }]);
+            await supabase.from('presence').upsert([{ email: userRef.email, last_online: new Date().toISOString(), online: true }]);
             window.addEventListener('beforeunload', async () => {
-              await supabase.from('presence').upsert([{ email: user.email, last_online: new Date().toISOString(), online: false }]);
+              await supabase.from('presence').upsert([{ email: userRef.email, last_online: new Date().toISOString(), online: false }]);
             });
-          } catch (err) { console.error("setPresenceOnline error:", err); }
+          } catch (err) {
+            console.error("setPresenceOnline error:", err);
+          }
         }
 
         async function startBridge() {
@@ -1144,29 +1047,40 @@
             setInterval(() => syncLocalStories(dbRef), POLL_INTERVAL_MS);
             setInterval(() => pushLocalChatsToRemote(dbRef), POLL_INTERVAL_MS);
             console.info("Nexus bridge iniciado. Pollers activos.");
-          } catch (err) { console.error("startBridge error:", err); }
+          } catch (err) {
+            console.error("startBridge error:", err);
+          }
         }
 
         async function ensureRemoteUserRow() {
-          if (!user || !supabase) return;
+          if (!userRef) return;
           try {
-            const { data } = await supabase.from('users').select('*').eq('email', user.email).limit(1);
+            const { data } = await supabase.from('users').select('*').eq('email', userRef.email).limit(1);
             if (!data || data.length === 0) {
-              await supabase.from('users').insert([{ email: user.email, name: user.name, pfp: user.pfp || null, color: user.color || null, created_at: new Date().toISOString() }]);
+              await supabase.from('users').insert([{
+                email: userRef.email,
+                name: userRef.name,
+                pfp: userRef.pfp || null,
+                color: userRef.color || null,
+                created_at: new Date().toISOString()
+              }]);
             }
-          } catch (err) { console.error("ensureRemoteUserRow error:", err); }
+          } catch (err) {
+            console.error("ensureRemoteUserRow error:", err);
+          }
         }
 
+        // start when DOM ready
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', async () => { await ensureRemoteUserRow(); startBridge(); });
         } else {
           (async () => { await ensureRemoteUserRow(); startBridge(); })();
         }
 
-        // expose useful bits for the app
-        window.nexus_bridge = { supabase, uploadFileToStorage, syncLocalVideos, syncLocalStories, pushLocalChatsToRemote, subscribeToRemoteChats, createRemoteVideoRecord, createRemoteStoryRecord, config: { VIDEOS_BUCKET, STORIES_BUCKET } };
-      })();
-    } // end guard
+        // expose for debugging
+        window.nexus_bridge = { supabase, uploadFileToStorage, syncLocalVideos, syncLocalStories, pushLocalChatsToRemote, subscribeToRemoteChats };
+      } // end initBridge
+    })();
     </script>
 
 </body>
